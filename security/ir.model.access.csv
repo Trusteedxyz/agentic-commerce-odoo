@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_trusteed_user,trusteed.user,base.model_res_users,trusteed.group_user,1,0,0,0
+access_trusteed_setup_wizard_admin,trusteed.setup.wizard admin,model_trusteed_setup_wizard,trusteed.group_admin,1,1,1,1
+access_trusteed_ai_tool_user,trusteed.ai.tool user,model_trusteed_ai_tool,base.group_user,1,0,0,0
+access_trusteed_ai_tool_admin,trusteed.ai.tool admin,model_trusteed_ai_tool,trusteed.group_admin,1,1,1,1
+access_trusteed_company_map_admin,trusteed.company.enforcement.map admin,model_trusteed_company_enforcement_map,trusteed.group_admin,1,1,1,1
+access_trusteed_company_map_user,trusteed.company.enforcement.map user,model_trusteed_company_enforcement_map,base.group_user,1,0,0,0

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+  <t t-name="trusteed.TrusteedPanel">
+    <!--
+      t-ref="root" exposes the wrapper element to the component via this.rootRef.
+      The toast uses position:fixed so it floats above the SPA content regardless
+      of the scroll position or layout context.
+    -->
+    <div class="o_trusteed_panel" style="padding: 16px;" t-ref="root">
+
+      <!-- Company-switch toast notification -->
+      <t t-if="state.toastMsg">
+        <div class="o_notification o_notification_info"
+             role="status"
+             aria-live="polite"
+             style="position: fixed; top: 16px; right: 16px; z-index: 9999;
+                    min-width: 280px; padding: 12px 16px; border-radius: 6px;
+                    background: #25b9d7; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.2);">
+          <i class="fa fa-spinner fa-spin me-2" aria-hidden="true"/>
+          <t t-esc="state.toastMsg"/>
+        </div>
+      </t>
+
+      <!-- SPA mount point — queried via rootRef in _mountSpa() -->
+      <!-- S042-003: data-auto-mount="false" — OWL _mountSpa() supplies source + getToken -->
+      <div id="amcp-root" data-section="trust-center" data-auto-mount="false"/>
+
+    </div>
+  </t>
+</templates>

@@ -1,0 +1,80 @@
+# Translation of trusteed (German)
+msgid ""
+msgstr ""
+"Project-Id-Version: trusteed\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: trusteed
+msgid "Trusteed Trust Center"
+msgstr "Trusteed Vertrauenszentrum"
+
+#. module: trusteed
+msgid "Trust Center"
+msgstr "Vertrauenszentrum"
+
+#. module: trusteed
+msgid "Settings"
+msgstr "Einstellungen"
+
+#. module: trusteed
+msgid "Trusteed User"
+msgstr "Trusteed Benutzer"
+
+#. module: trusteed
+msgid "Trusteed Administrator"
+msgstr "Trusteed Administrator"
+
+#. module: trusteed
+msgid "Merchant ID"
+msgstr "Händler-ID"
+
+#. module: trusteed
+msgid "Bootstrap Secret"
+msgstr "Bootstrap-Geheimnis"
+
+#. module: trusteed
+msgid "API Base URL"
+msgstr "API-Basis-URL"
+
+#. module: trusteed
+msgid "Trusteed Settings"
+msgstr "Trusteed Einstellungen"
+
+#. module: trusteed
+msgid "Welcome"
+msgstr "Willkommen"
+
+#. module: trusteed
+msgid "Connect"
+msgstr "Verbinden"
+
+#. module: trusteed
+msgid "Enter Credentials"
+msgstr "Anmeldedaten Eingeben"
+
+#. module: trusteed
+msgid "Test Connection"
+msgstr "Verbindung Testen"
+
+#. module: trusteed
+msgid "Connection Successful"
+msgstr "Verbindung Erfolgreich"
+
+#. module: trusteed
+msgid "Connection Failed"
+msgstr "Verbindung Fehlgeschlagen"
+
+#. module: trusteed
+msgid "Re-authenticate"
+msgstr "Erneut Authentifizieren"
+
+#. module: trusteed
+msgid "Company"
+msgstr "Unternehmen"
+
+#. module: trusteed
+msgid "Active Companies"
+msgstr "Aktive Unternehmen"

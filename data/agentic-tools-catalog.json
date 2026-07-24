@@ -1,0 +1,297 @@
+{
+  "tools": [
+    {
+      "category": "trust",
+      "experimental": false,
+      "id": "trusteed/sign-trust-receipt",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "agentId": {
+            "description": "Optional DID or identifier of the acting agent",
+            "type": "string"
+          },
+          "amount": {
+            "description": "Transaction amount in currency minor units",
+            "type": "number"
+          },
+          "currency": {
+            "description": "ISO 4217 currency code (e.g. EUR, USD)",
+            "type": "string"
+          },
+          "orderId": {
+            "description": "Platform order identifier (e.g. WooCommerce order ID, PS cart reference, Odoo sale.order.id)",
+            "type": "string"
+          }
+        },
+        "required": ["orderId"],
+        "type": "object"
+      },
+      "name": "Sign Trust Receipt",
+      "outputSchema": {
+        "properties": {
+          "issuedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jws": {
+            "description": "Compact JWS (header.payload.signature) — Ed25519 signed",
+            "type": "string"
+          },
+          "jws_url": {
+            "description": "Public URL where the JWS can be verified",
+            "type": "string"
+          },
+          "receiptId": {
+            "description": "Opaque receipt UUID",
+            "type": "string"
+          }
+        },
+        "required": ["receiptId", "jws"],
+        "type": "object"
+      },
+      "requiredCapability": "sign_trust_receipt",
+      "routing": {
+        "backendStatus": "planned",
+        "kind": "rest",
+        "notes": "Read surface (GET /v1/embed/trust/receipts) is live, but a standalone POST to sign an arbitrary order's receipt does not exist. Receipts are produced by the checkout tools per spec-040. Register UNAVAILABLE until a write endpoint ships.",
+        "target": "/v1/embed/trust/receipts"
+      }
+    },
+    {
+      "category": "identity",
+      "experimental": false,
+      "id": "trusteed/verify-agent-signature",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "description": "Request body if Content-Digest covers it",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Headers map including Signature, Signature-Input, Content-Digest",
+            "type": "object"
+          },
+          "method": {
+            "description": "HTTP method of the signed request",
+            "type": "string"
+          },
+          "url": {
+            "description": "Full URL of the signed request",
+            "type": "string"
+          }
+        },
+        "required": ["method", "url", "headers"],
+        "type": "object"
+      },
+      "name": "Verify Agent Signature",
+      "outputSchema": {
+        "properties": {
+          "keyId": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "enum": ["verified", "unverified", "spoofed", "skipped"],
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": ["verified", "verificationStatus"],
+        "type": "object"
+      },
+      "requiredCapability": "verify_agent_signature",
+      "routing": {
+        "backendStatus": "implemented",
+        "kind": "rest",
+        "notes": "Merchant-facing per-store S2S route (LANE 046-F1 Option A). Authenticated by X-Trusteed-S2S-Secret, not the staging-only internal token.",
+        "target": "/api/v1/embed/agentic-tools/verify-agent-signature"
+      }
+    },
+    {
+      "category": "payment",
+      "experimental": false,
+      "id": "trusteed/dispatch-payment-acp",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cartId": {
+            "description": "Cart or order reference",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "description": "Caller-supplied idempotency key (required to prevent double-charge)",
+            "type": "string"
+          },
+          "merchantId": {
+            "description": "Trusteed merchant identifier",
+            "type": "string"
+          }
+        },
+        "required": ["cartId", "idempotencyKey", "merchantId"],
+        "type": "object"
+      },
+      "name": "Dispatch Payment (ACP)",
+      "outputSchema": {
+        "properties": {
+          "jws": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": ["succeeded", "pending", "failed"],
+            "type": "string"
+          }
+        },
+        "required": ["paymentId", "status"],
+        "type": "object"
+      },
+      "requiredCapability": "pay_with_agent",
+      "routing": {
+        "backendStatus": "implemented",
+        "kind": "mcp-tool",
+        "notes": "Routed through POST /:storeSlug/mcp (checkout bucket). process_agent_payment is registered in tool-bucket-registry.ts.",
+        "target": "process_agent_payment"
+      }
+    },
+    {
+      "category": "payment",
+      "experimental": false,
+      "id": "trusteed/dispatch-payment-x402",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cartId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "merchantId": {
+            "type": "string"
+          },
+          "paymentPayload": {
+            "additionalProperties": true,
+            "description": "x402 payment payload including signature and chain details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "cartId",
+          "idempotencyKey",
+          "merchantId",
+          "paymentPayload"
+        ],
+        "type": "object"
+      },
+      "name": "Dispatch Payment (x402)",
+      "outputSchema": {
+        "properties": {
+          "jws": {
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": ["succeeded", "pending", "failed"],
+            "type": "string"
+          },
+          "txHash": {
+            "type": "string"
+          }
+        },
+        "required": ["paymentId", "status"],
+        "type": "object"
+      },
+      "requiredCapability": "pay_with_agent",
+      "routing": {
+        "backendStatus": "implemented",
+        "kind": "rest",
+        "notes": "Merchant-facing per-store S2S route (LANE 046-F1 Option A). Authenticated by X-Trusteed-S2S-Secret; store-scoped ownership. Accepts a V1 paymentPayload body or a PAYMENT-SIGNATURE (V2) header.",
+        "target": "/api/v1/embed/agentic-tools/dispatch-payment-x402"
+      }
+    },
+    {
+      "category": "payment-experimental",
+      "experimental": true,
+      "featureFlag": "SD_JWT_ENABLED",
+      "id": "trusteed/dispatch-payment-ap2",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cartId": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "mandateJwt": {
+            "description": "AP2 SD-JWT compact mandate from the agent wallet",
+            "type": "string"
+          },
+          "merchantId": {
+            "type": "string"
+          }
+        },
+        "required": ["cartId", "idempotencyKey", "merchantId", "mandateJwt"],
+        "type": "object"
+      },
+      "name": "Dispatch Payment (AP2 v0.2)",
+      "outputSchema": {
+        "properties": {
+          "jws": {
+            "type": "string"
+          },
+          "mandateJwt": {
+            "description": "Signed checkout mandate returned by server",
+            "type": "string"
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": ["succeeded", "pending", "failed"],
+            "type": "string"
+          }
+        },
+        "required": ["paymentId", "status"],
+        "type": "object"
+      },
+      "requiredCapability": "pay_with_agent",
+      "routing": {
+        "backendStatus": "planned",
+        "kind": "rest",
+        "notes": "AP2 v0.2 is dormant (spec-044, behind SD_JWT_ENABLED). The dispatch route does NOT exist yet. Register UNAVAILABLE until spec-044 ships a dispatch route.",
+        "target": "/api/v1/protocols/ap2/dispatch"
+      }
+    }
+  ],
+  "version": "1.0.0"
+}

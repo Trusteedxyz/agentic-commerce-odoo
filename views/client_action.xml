@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="action_trusteed_client" model="ir.actions.client">
+      <field name="name">Trusteed Trust Center</field>
+      <field name="tag">trusteed_panel</field>
+      <field name="target">current</field>
+    </record>
+
+    <!-- Fase A / Bloque 3 (T9): monta la sección mis-ventas (listado de
+         TrustReceipts + descarga de comprobante) reusando el mismo panel. -->
+    <record id="action_trusteed_ventas" model="ir.actions.client">
+      <field name="name">Trusteed — Mis ventas</field>
+      <field name="tag">trusteed_panel</field>
+      <field name="target">current</field>
+      <field name="context">{'trusteed_section': 'mis-ventas'}</field>
+    </record>
+  </data>
+</odoo>

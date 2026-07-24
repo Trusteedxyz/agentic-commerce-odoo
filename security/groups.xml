@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="group_user" model="res.groups">
+      <field name="name">Trusteed User</field>
+      <field name="category_id" ref="base.module_category_administration"/>
+      <field name="comment">Can view Trust Center and Merchant Center panels.</field>
+    </record>
+    <record id="group_admin" model="res.groups">
+      <field name="name">Trusteed Administrator</field>
+      <field name="category_id" ref="base.module_category_administration"/>
+      <field name="implied_ids" eval="[(4, ref('group_user'))]"/>
+      <field name="comment">Can configure bootstrap secret and manage settings.</field>
+    </record>
+  </data>
+</odoo>

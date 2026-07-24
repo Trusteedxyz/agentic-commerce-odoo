@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--
+        T043-062 — Trust score badge on sale.order kanban cards.
+        Inherits the standard Odoo sale kanban view and injects an
+        trusteed-trust-badge before the bottom-right status area.
+
+        The badge is only shown when trust_level != 'none' (i.e. MVP
+        always hidden; production shows once the API is wired in
+        sale_order_trust.py _compute_trust_score).
+    -->
+    <record id="view_sale_order_kanban_amcp" model="ir.ui.view">
+        <field name="name">sale.order.kanban.amcp.trust</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sale_order_kanban"/>
+        <field name="arch" type="xml">
+            <!-- Kanban card templates can only read fields declared here -->
+            <xpath expr="//field[@name='currency_id']" position="after">
+                <field name="trusteed_trust_level"/>
+                <field name="trusteed_trust_score"/>
+            </xpath>
+            <!--
+                Odoo 18 redesigned the kanban card footer (no more
+                oe_kanban_bottom_right/left divs — verified empirically
+                2026-07-23 against the real sale.view_sale_order_kanban
+                arch, which now uses a flex <footer>). Inject the trust
+                badge right before the status field inside that footer.
+            -->
+            <xpath expr="//field[@name='state']" position="before">
+                <div class="amcp-trust-badge" t-if="record.trusteed_trust_level.raw_value != 'none'">
+                    <span t-attf-class="badge amcp-trust-#{record.trusteed_trust_level.raw_value}">
+                        <i class="fa fa-shield"/>
+                        <t t-esc="record.trusteed_trust_score.value"/>%
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

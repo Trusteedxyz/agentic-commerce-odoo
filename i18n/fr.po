@@ -1,0 +1,80 @@
+# Translation of trusteed (French)
+msgid ""
+msgstr ""
+"Project-Id-Version: trusteed\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: trusteed
+msgid "Trusteed Trust Center"
+msgstr "Centre de Confiance Trusteed"
+
+#. module: trusteed
+msgid "Trust Center"
+msgstr "Centre de Confiance"
+
+#. module: trusteed
+msgid "Settings"
+msgstr "Paramètres"
+
+#. module: trusteed
+msgid "Trusteed User"
+msgstr "Utilisateur Trusteed"
+
+#. module: trusteed
+msgid "Trusteed Administrator"
+msgstr "Administrateur Trusteed"
+
+#. module: trusteed
+msgid "Merchant ID"
+msgstr "ID Marchand"
+
+#. module: trusteed
+msgid "Bootstrap Secret"
+msgstr "Secret d'Amorçage"
+
+#. module: trusteed
+msgid "API Base URL"
+msgstr "URL de Base de l'API"
+
+#. module: trusteed
+msgid "Trusteed Settings"
+msgstr "Paramètres Trusteed"
+
+#. module: trusteed
+msgid "Welcome"
+msgstr "Bienvenue"
+
+#. module: trusteed
+msgid "Connect"
+msgstr "Connecter"
+
+#. module: trusteed
+msgid "Enter Credentials"
+msgstr "Saisir les Identifiants"
+
+#. module: trusteed
+msgid "Test Connection"
+msgstr "Tester la Connexion"
+
+#. module: trusteed
+msgid "Connection Successful"
+msgstr "Connexion Réussie"
+
+#. module: trusteed
+msgid "Connection Failed"
+msgstr "Connexion Échouée"
+
+#. module: trusteed
+msgid "Re-authenticate"
+msgstr "Se Réauthentifier"
+
+#. module: trusteed
+msgid "Company"
+msgstr "Société"
+
+#. module: trusteed
+msgid "Active Companies"
+msgstr "Sociétés Actives"

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Form view — trusteed.setup.wizard
+         4-page wizard controlled by the `state` Selection field.
+         Odoo 17/18: uses inline `invisible` domain attrs (no deprecated `attrs`).
+    ════════════════════════════════════════════════════════════════════════ -->
+    <record id="view_trusteed_setup_wizard_form" model="ir.ui.view">
+      <field name="name">trusteed.setup.wizard.form</field>
+      <field name="model">trusteed.setup.wizard</field>
+      <field name="arch" type="xml">
+        <form string="Trusteed Quick Setup">
+
+          <!-- ── Progress indicator ─────────────────────────────────────── -->
+          <!-- Plain form view arch: owl directives (t-if) are forbidden here,
+               so each step/label pair is its own element gated by `invisible`,
+               same technique used everywhere else in this view. -->
+          <div class="o_setup_wizard_progress mb-3 d-flex align-items-center gap-2">
+            <span class="badge rounded-pill" style="background:#25b9d7; color:#fff;" invisible="state != 'welcome'">Step 1 / 4</span>
+            <span class="badge rounded-pill" style="background:#25b9d7; color:#fff;" invisible="state != 'connect'">Step 2 / 4</span>
+            <span class="badge rounded-pill" style="background:#25b9d7; color:#fff;" invisible="state != 'credentials'">Step 3 / 4</span>
+            <span class="badge rounded-pill" style="background:#25b9d7; color:#fff;" invisible="state != 'test'">Step 4 / 4</span>
+            <span class="text-muted small" invisible="state != 'welcome'">Welcome</span>
+            <span class="text-muted small" invisible="state != 'connect'">Connect Portal</span>
+            <span class="text-muted small" invisible="state != 'credentials'">Enter Credentials</span>
+            <span class="text-muted small" invisible="state != 'test'">Test Connection</span>
+          </div>
+
+          <sheet>
+
+            <!-- ── Page 1: Welcome ──────────────────────────────────────── -->
+            <group invisible="state != 'welcome'">
+              <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">
+                  <i class="fa fa-handshake-o"/> Welcome to Trusteed
+                </h4>
+                <p>
+                  This wizard connects your Odoo instance to the Trusteed Trust
+                  Center in 4 quick steps. You will need:
+                </p>
+                <ul>
+                  <li>A Trusteed account at <strong>app.trusteed.xyz</strong></li>
+                  <li>Outbound HTTPS access from this server to <strong>api.trusteed.xyz</strong></li>
+                  <li>The <em>Trusteed Administrator</em> role on your user profile</li>
+                </ul>
+                <hr/>
+                <p class="mb-0 text-muted small">
+                  <i class="fa fa-lock"/> Credentials are stored in
+                  <em>ir.config_parameter</em> and are never returned to the browser.
+                </p>
+              </div>
+            </group>
+
+            <!-- ── Page 2: Connect Portal ───────────────────────────────── -->
+            <group invisible="state != 'connect'">
+              <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading">
+                  <i class="fa fa-plug"/> Connect to the Trusteed Portal
+                </h4>
+                <ol>
+                  <li>
+                    Open the portal:
+                    <a href="https://app.trusteed.xyz/connect"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="btn btn-sm btn-secondary ms-2">
+                      <i class="fa fa-external-link"/> Open Portal
+                    </a>
+                  </li>
+                  <li>Log in and navigate to <strong>Connect a Store → Odoo</strong>.</li>
+                  <li>
+                    Copy your <strong>Merchant ID</strong> and
+                    <strong>Bootstrap Secret</strong>.
+                  </li>
+                </ol>
+              </div>
+              <div class="text-muted small">
+                <i class="fa fa-info-circle"/>
+                Your Merchant ID is a UUID and your Bootstrap Secret is a 64-character
+                hex string. Keep the secret confidential.
+              </div>
+            </group>
+
+            <!-- ── Page 3: Credentials ──────────────────────────────────── -->
+            <group invisible="state != 'credentials'">
+              <group string="Trusteed Credentials">
+                <field name="merchant_id"
+                       placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                       required="state == 'credentials'"/>
+                <field name="bootstrap_secret"
+                       password="True"
+                       placeholder="Paste your 64-character hex secret"
+                       required="state == 'credentials'"
+                       groups="trusteed.group_admin"/>
+              </group>
+              <div class="alert alert-warning" role="alert">
+                <i class="fa fa-exclamation-triangle"/>
+                The Bootstrap Secret will be stored securely in the database.
+                Do not share it or include it in screenshots.
+              </div>
+            </group>
+
+            <!-- ── Page 4: Test Connection ──────────────────────────────── -->
+            <group invisible="state != 'test'">
+              <div class="alert alert-secondary" role="alert" invisible="test_result">
+                <i class="fa fa-wifi"/>
+                Click <strong>Test Connection</strong> below to verify that Odoo
+                can reach the Trusteed API with your credentials.
+              </div>
+
+              <!-- Success result -->
+              <div class="alert alert-success"
+                   role="alert"
+                   invisible="not test_success">
+                <h4 class="alert-heading">
+                  <i class="fa fa-check-circle"/> Connection successful!
+                </h4>
+                <field name="test_result" readonly="1" nolabel="1"/>
+              </div>
+
+              <!-- Failure result -->
+              <div class="alert alert-danger"
+                   role="alert"
+                   invisible="test_success or not test_result">
+                <h4 class="alert-heading">
+                  <i class="fa fa-times-circle"/> Connection failed
+                </h4>
+                <field name="test_result" readonly="1" nolabel="1"/>
+                <hr/>
+                <p class="mb-0">
+                  Use the <em>Back</em> button to correct your credentials.
+                </p>
+              </div>
+            </group>
+
+          </sheet>
+
+          <!-- ── Footer: wizard navigation buttons ──────────────────────── -->
+          <footer>
+
+            <!-- Step 1 footer -->
+            <button name="action_next_welcome"
+                    string="Get started →"
+                    type="object"
+                    class="btn-primary"
+                    invisible="state != 'welcome'"/>
+
+            <!-- Step 2 footer -->
+            <button name="action_next_connect"
+                    string="I have my credentials →"
+                    type="object"
+                    class="btn-primary"
+                    invisible="state != 'connect'"/>
+            <button name="action_next_welcome"
+                    string="← Back"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="state != 'connect'"/>
+
+            <!-- Step 3 footer -->
+            <button name="action_save_credentials"
+                    string="Save and continue →"
+                    type="object"
+                    class="btn-primary"
+                    invisible="state != 'credentials'"/>
+            <button name="action_prev_credentials"
+                    string="← Back"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="state != 'credentials'"/>
+
+            <!-- Step 4 footer -->
+            <button name="action_test_connection"
+                    string="Test Connection"
+                    type="object"
+                    class="btn-success"
+                    invisible="state != 'test'"/>
+            <button name="action_finish"
+                    string="Open Trust Center"
+                    type="object"
+                    class="btn-primary"
+                    invisible="state != 'test' or not test_success"/>
+            <button name="action_prev_test"
+                    string="← Check credentials"
+                    type="object"
+                    class="btn-secondary"
+                    invisible="state != 'test'"/>
+
+            <button string="Cancel"
+                    class="btn-secondary"
+                    special="cancel"/>
+
+          </footer>
+        </form>
+      </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         Server action that creates a fresh wizard instance and opens it.
+         Used by the menu item so each click starts from step 1.
+    ════════════════════════════════════════════════════════════════════════ -->
+    <record id="action_trusteed_setup_wizard" model="ir.actions.server">
+      <field name="name">Trusteed Quick Setup</field>
+      <field name="model_id" ref="model_trusteed_setup_wizard"/>
+      <field name="binding_model_id" ref="model_trusteed_setup_wizard"/>
+      <!-- F-003: restrict direct RPC invocation to group_admin -->
+      <field name="groups_id" eval="[(4, ref('trusteed.group_admin'))]"/>
+      <field name="state">code</field>
+      <field name="code">
+wizard = env['trusteed.setup.wizard'].create({})
+action = {
+    'type': 'ir.actions.act_window',
+    'res_model': 'trusteed.setup.wizard',
+    'res_id': wizard.id,
+    'view_mode': 'form',
+    'target': 'new',
+}
+      </field>
+    </record>
+
+  </data>
+</odoo>

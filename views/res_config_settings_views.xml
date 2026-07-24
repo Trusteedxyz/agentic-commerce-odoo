@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!--
+      Odoo 18 replaced the old raw div.settings/app_settings_block markup
+      with a declarative <app>/<block>/<setting> DSL (see base_setup,
+      account, calendar for reference). inherit_id must point at the real
+      base settings form (base.res_config_settings_view_form) — the
+      previous version pointed at an ir.actions.act_window xmlid by
+      mistake, which resolved to an unrelated view and made the old
+      div-based xpath fail to locate anything.
+    -->
+    <record id="res_config_settings_view_trusteed" model="ir.ui.view">
+      <field name="name">res.config.settings.view.trusteed</field>
+      <field name="model">res.config.settings</field>
+      <field name="priority">100</field>
+      <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form" position="inside">
+          <app data-string="Trusteed" string="Trusteed" name="trusteed" groups="trusteed.group_admin">
+            <block title="Trusteed Trust Center" name="trusteed_credentials_setting_container">
+              <setting id="trusteed_merchant_id_setting" string="Merchant ID" help="UUID from Trusteed onboarding portal.">
+                <field name="trusteed_merchant_id" class="o_field_highlight"/>
+              </setting>
+              <setting id="trusteed_bootstrap_secret_setting" string="Bootstrap Secret" help="Hex secret from onboarding. Keep confidential.">
+                <field name="trusteed_bootstrap_secret" password="True"/>
+              </setting>
+              <setting id="trusteed_api_base_setting" string="API Base URL">
+                <field name="trusteed_api_base"/>
+              </setting>
+            </block>
+            <block title="Agentic Tools" name="trusteed_agentic_tools_setting_container">
+              <div class="text-muted mb16">
+                Enable each agentic tool independently. Payment tools default to OFF
+                (opt-in). Tools whose backend is not yet deployed (planned) stay
+                unavailable even when toggled on.
+              </div>
+              <setting id="trusteed_tool_sign_trust_receipt_setting" string="Sign Trust Receipt" help="Backend not yet deployed (planned).">
+                <field name="trusteed_tool_sign_trust_receipt"/>
+              </setting>
+              <setting id="trusteed_tool_verify_agent_signature_setting" string="Verify Agent Signature" help="RFC 9421 signature verification (spec-045).">
+                <field name="trusteed_tool_verify_agent_signature"/>
+              </setting>
+              <setting id="trusteed_tool_dispatch_payment_acp_setting" string="Dispatch Payment (ACP)" help="Agent-initiated payment — opt-in.">
+                <field name="trusteed_tool_dispatch_payment_acp"/>
+              </setting>
+              <setting id="trusteed_tool_dispatch_payment_x402_setting" string="Dispatch Payment (x402)" help="Agent-initiated payment — opt-in.">
+                <field name="trusteed_tool_dispatch_payment_x402"/>
+              </setting>
+              <setting id="trusteed_tool_dispatch_payment_ap2_setting" string="Dispatch Payment (AP2)" help="Experimental + backend not deployed (planned).">
+                <field name="trusteed_tool_dispatch_payment_ap2"/>
+              </setting>
+            </block>
+          </app>
+        </xpath>
+      </field>
+    </record>
+    <record id="action_trusteed_settings" model="ir.actions.act_window">
+      <field name="name">Trusteed Settings</field>
+      <field name="res_model">res.config.settings</field>
+      <field name="view_mode">form</field>
+      <field name="target">inline</field>
+      <field name="context">{'module': 'trusteed'}</field>
+    </record>
+  </data>
+</odoo>

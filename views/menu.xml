@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <menuitem id="menu_trusteed_root"
+              name="Trusteed"
+              sequence="90"
+              groups="trusteed.group_user"/>
+    <menuitem id="menu_trusteed_trust"
+              name="Trust Center"
+              parent="menu_trusteed_root"
+              action="action_trusteed_client"
+              sequence="10"/>
+    <menuitem id="menu_trusteed_ventas"
+              name="Mis ventas"
+              parent="menu_trusteed_root"
+              action="action_trusteed_ventas"
+              sequence="20"/>
+    <menuitem id="menu_trusteed_settings"
+              name="Settings"
+              parent="menu_trusteed_root"
+              action="action_trusteed_settings"
+              sequence="90"
+              groups="trusteed.group_admin"/>
+    <menuitem id="menu_trusteed_setup_wizard"
+              name="Quick Setup"
+              parent="menu_trusteed_root"
+              action="trusteed.action_trusteed_setup_wizard"
+              sequence="5"
+              groups="trusteed.group_admin"/>
+  </data>
+</odoo>

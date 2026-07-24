@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    spec-048 T084 — CEL agent token field on sale.order
+    Adds x_trusteed_agent_token (Char) to the form view as a hidden field.
+    The field value is set programmatically by the agentic checkout client
+    (XML-RPC / JSON-RPC write before action_confirm), and read by the
+    sale_order_enforcement.py override at confirm time.
+    It is intentionally invisible in the UI — agents supply it via API.
+
+    spec-048 T095 — CEL stats shortcut button on sale.order
+    Shows a "Ver estadísticas CEL" button in the status bar for orders that
+    carry an agent token. Clicking opens the Trusteed Trust Center overview
+    in a new browser tab (ir.actions.act_url). The button is hidden when no
+    agent token is present (human orders).
+-->
+<odoo>
+    <record id="view_order_form_cel_token" model="ir.ui.view">
+        <field name="name">sale.order.form.cel.token</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!--
+                Inject the hidden field before the <sheet> element so it is
+                part of the form DOM and accessible to API callers, but never
+                rendered visibly to human users.
+            -->
+            <xpath expr="//sheet" position="before">
+                <field name="x_trusteed_agent_token" invisible="1"/>
+                <!--
+                    T095: CEL stats shortcut — only visible for agentic orders
+                    (x_trusteed_agent_token is non-empty).
+                    action_open_trusteed_stats is defined in sale_order_enforcement.py
+                    and opens the Trust Center overview in a new tab.
+                -->
+                <div class="o_field_widget" invisible="not x_trusteed_agent_token">
+                    <button
+                        type="object"
+                        name="action_open_trusteed_stats"
+                        string="Ver estadísticas CEL"
+                        class="btn btn-link btn-sm"
+                        title="Abre el Trust Center de Trusteed con las estadísticas de enforcement para este comercio"
+                    />
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

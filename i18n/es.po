@@ -1,0 +1,44 @@
+# Translation of trusteed (Spanish)
+msgid ""
+msgstr ""
+"Project-Id-Version: trusteed\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: trusteed
+msgid "Trusteed Trust Center"
+msgstr "Trusteed Trust Center"
+
+#. module: trusteed
+msgid "Trust Center"
+msgstr "Centro de Confianza"
+
+#. module: trusteed
+msgid "Settings"
+msgstr "Configuración"
+
+#. module: trusteed
+msgid "Trusteed User"
+msgstr "Usuario Trusteed"
+
+#. module: trusteed
+msgid "Trusteed Administrator"
+msgstr "Administrador Trusteed"
+
+#. module: trusteed
+msgid "Merchant ID"
+msgstr "ID de Comerciante"
+
+#. module: trusteed
+msgid "Bootstrap Secret"
+msgstr "Secreto de Arranque"
+
+#. module: trusteed
+msgid "API Base URL"
+msgstr "URL Base de la API"
+
+#. module: trusteed
+msgid "Trusteed Settings"
+msgstr "Configuración de Trusteed"

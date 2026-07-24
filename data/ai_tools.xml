@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Trusteed AI Tool registrations — spec-046 T080
+
+  Each record registers an ir.actions.server with usage='ai_tool'.
+  This makes the action visible to the Odoo AI App (19.0) and to any
+  future Odoo MCP server implementation as a callable tool.
+
+  DESIGN NOTES:
+  ─────────────
+  1. usage='ai_tool' is the canonical registration mechanism.
+     It is fully supported in Odoo 19.0; on Odoo 18.x the field exists
+     but the AI App discovery UI may not surface it. The actions are still
+     callable via env.ref(...).run() and by the post_init_hook.
+
+  2. ai_schema (One2many on ir.actions.server) CANNOT be declared inline
+     in XML data because Odoo's XML data loader does not support One2many
+     child record creation through field tags in <record>.
+     Schema rows are created programmatically in hooks.post_init_hook()
+     after this file is loaded.
+
+  3. Output contract (Odoo 19 AI App):
+       ai['result'] = <dict>   — the AI App reads this slot as the tool output.
+     The code field must assign to ai['result'] at the end of execution.
+
+  4. Arguments are read from the Python execution scope by name — they are
+     NOT function parameters. The AI App injects them from ai_schema rows.
+     On Odoo 18.x without schema injection, callers supply args via
+     ir.actions.server context or by calling the backing method directly.
+
+  5. model_id is set to base.model_res_partner as a neutral anchor model.
+     binding_model_id is intentionally omitted — these tools should not
+     appear in any model's "Action" button menu.
+
+  6. CDATA is used for the code field to avoid escaping < > & in Python.
+
+  7. noupdate="1": these ir.actions.server records are created once on install
+     and NOT overwritten on module upgrade. This preserves any operator edits to
+     the action (e.g. a customised `code` body). If the canonical tool wiring
+     changes, bump the record xml_ids or ship a migration script under
+     `migrations/` rather than relying on the data loader to clobber live rows.
+-->
+<odoo>
+  <data noupdate="1">
+
+    <!-- ================================================================ -->
+    <!-- Tool 1: sign-trust-receipt                                        -->
+    <!-- backendStatus: PLANNED — there is NO standalone receipt-signing    -->
+    <!-- write endpoint. Receipts are emitted by the checkout pipeline      -->
+    <!-- (spec-040) and READ via GET /v1/embed/trust/receipts. The legacy   -->
+    <!-- POST /api/v1/trust/receipts/sign path was NEVER built.             -->
+    <!-- Args: orderId (required), agentId (optional)                      -->
+    <!-- ================================================================ -->
+    <record id="action_trusteed_sign_trust_receipt" model="ir.actions.server">
+      <field name="name">Trusteed: Sign Trust Receipt</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="usage">ai_tool</field>
+      <field name="state">code</field>
+      <field name="code"><![CDATA[
+# Tool: sign-trust-receipt
+# Arguments injected by AI App from ai_schema: orderId (char, required), agentId (char, optional)
+# ai['result'] is the output slot read by the Odoo AI App (Odoo 19 contract).
+result = env['trusteed.ai.tool'].run_sign_trust_receipt(
+    orderId,
+    agentId if 'agentId' in dir() else None,
+)
+ai['result'] = result
+]]></field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Tool 2: verify-agent-signature                                    -->
+    <!-- Endpoint: POST /api/v1/agent/verify-signature                     -->
+    <!-- Args: method, url, headers                                        -->
+    <!-- ================================================================ -->
+    <record id="action_trusteed_verify_agent_signature" model="ir.actions.server">
+      <field name="name">Trusteed: Verify Agent Signature</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="usage">ai_tool</field>
+      <field name="state">code</field>
+      <field name="code"><![CDATA[
+# Tool: verify-agent-signature (RFC 9421 HTTP Message Signature)
+# Arguments: method (char), url (char), headers (json dict)
+result = env['trusteed.ai.tool'].run_verify_agent_signature(
+    method,
+    url,
+    headers,
+)
+ai['result'] = result
+]]></field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Tool 3: dispatch-payment-acp                                      -->
+    <!-- Endpoint: POST /api/v1/checkout/dispatch/acp                      -->
+    <!-- Args: cartId, idempotencyKey, merchantId                          -->
+    <!-- ================================================================ -->
+    <record id="action_trusteed_dispatch_payment_acp" model="ir.actions.server">
+      <field name="name">Trusteed: Dispatch Payment (ACP)</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="usage">ai_tool</field>
+      <field name="state">code</field>
+      <field name="code"><![CDATA[
+# Tool: dispatch-payment-acp (Agent Commerce Protocol rail)
+# Arguments: cartId (char), idempotencyKey (char), merchantId (char)
+result = env['trusteed.ai.tool'].run_dispatch_payment_acp(
+    cartId,
+    idempotencyKey,
+    merchantId,
+)
+ai['result'] = result
+]]></field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Tool 4: dispatch-payment-x402                                     -->
+    <!-- Endpoint: POST /api/v1/embed/agentic-tools/dispatch-payment-x402  -->
+    <!-- (LANE 046-F1 per-store S2S route; the legacy                      -->
+    <!-- /api/v1/checkout/dispatch/x402 path was NEVER built)              -->
+    <!-- Args: cartId, idempotencyKey, merchantId, paymentPayload          -->
+    <!-- ================================================================ -->
+    <record id="action_trusteed_dispatch_payment_x402" model="ir.actions.server">
+      <field name="name">Trusteed: Dispatch Payment (x402)</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="usage">ai_tool</field>
+      <field name="state">code</field>
+      <field name="code"><![CDATA[
+# Tool: dispatch-payment-x402 (HTTP 402 stablecoin rail)
+# Arguments: cartId (char), idempotencyKey (char), merchantId (char), paymentPayload (json)
+result = env['trusteed.ai.tool'].run_dispatch_payment_x402(
+    cartId,
+    idempotencyKey,
+    merchantId,
+    paymentPayload,
+)
+ai['result'] = result
+]]></field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Tool 5: dispatch-payment-ap2                                      -->
+    <!-- Endpoint: POST /api/v1/checkout/dispatch/ap2                      -->
+    <!-- Args: cartId, idempotencyKey, merchantId, mandateJwt              -->
+    <!-- ================================================================ -->
+    <record id="action_trusteed_dispatch_payment_ap2" model="ir.actions.server">
+      <field name="name">Trusteed: Dispatch Payment (AP2)</field>
+      <field name="model_id" ref="base.model_res_partner"/>
+      <field name="usage">ai_tool</field>
+      <field name="state">code</field>
+      <field name="code"><![CDATA[
+# Tool: dispatch-payment-ap2 (Agent Payment Protocol v0.2 / FIDO Alliance rail)
+# Arguments: cartId (char), idempotencyKey (char), merchantId (char), mandateJwt (char)
+result = env['trusteed.ai.tool'].run_dispatch_payment_ap2(
+    cartId,
+    idempotencyKey,
+    merchantId,
+    mandateJwt,
+)
+ai['result'] = result
+]]></field>
+    </record>
+
+  </data>
+</odoo>

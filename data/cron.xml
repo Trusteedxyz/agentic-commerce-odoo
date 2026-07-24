@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    spec-048 T087 — CEL snapshot refresh cron
+    Proactively warms the in-process snapshot cache every 5 minutes so that
+    the first sale.order.action_confirm() in each worker interval does not
+    incur a cold-pull latency.  The cron runs under sudo on the
+    trusteed.enforcement.snapshot abstract model.
+
+    Note: `numbercall` was removed from ir.cron in this Odoo 18.0 build
+    (verified empirically 2026-07-23 — the F0D-SPIKE-RESULT.md #3 claim
+    that it was still present did not hold). A recurring cron with no
+    call-count limit just omits the field; `active=True` + interval
+    fields alone make it run indefinitely.
+-->
+<odoo>
+    <record id="ir_cron_cel_snapshot_refresh" model="ir.cron">
+        <field name="name">Trusteed CEL: Refresh Rule Snapshot</field>
+        <!--
+            Use sale.model_sale_order as the bound model so that the cron
+            appears under Sales in the Technical > Automation > Scheduled
+            Actions list, making it easy for admins to locate and disable.
+        -->
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">
+env['trusteed.enforcement.snapshot'].sudo().get_snapshot()
+        </field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+        <!--
+            Priority 20 (lower = higher priority in Odoo scheduler).
+            Default priority is 5; we use 20 to avoid competing with
+            critical accounting or inventory crons.
+        -->
+        <field name="priority">20</field>
+    </record>
+</odoo>
