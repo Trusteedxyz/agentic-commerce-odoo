@@ -59,7 +59,7 @@ Trusteed regroupe un Trust Center, un registre de reçus signés et 5 outils age
 ### Installation manuelle
 
 1. **Téléchargez le `.zip` installable** depuis la dernière Release GitHub :
-   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.0.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.0.0.zip)
+   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.1.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.1.0.zip)
    — ou parcourez toutes les versions sur la [page des Releases](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
 2. Extrayez-le dans votre `addons_path` Odoo — le dossier extrait doit s'appeler `trusteed` (c'est le nom technique du module).
 3. Redémarrez Odoo : `systemctl restart odoo` (ou l'équivalent pour votre déploiement).
@@ -124,6 +124,11 @@ Après l'installation, un menu de premier niveau **Trusteed** apparaît dans le 
 **Puis-je l'installer sur Odoo Online (SaaS) ?** Non — Odoo Online n'autorise pas les modules tiers personnalisés. Utilisez Odoo.sh ou une installation on-premise.
 
 ## Journal des modifications
+
+### 18.0.1.1.0
+
+- **Correctif de sécurité** — la détection de rejeu du vérificateur de jetons d'agent reposait sur un `if nonce:`, si bien qu'un jeton omettant simplement le claim `nonce` échappait entièrement à la détection hors ligne. Le claim est désormais obligatoire (16 à 64 caractères, comme l'exige le schéma canonique du jeton) et un jeton qui en est dépourvu est rejeté — fail-closed, comme dans les connecteurs WooCommerce, PrestaShop et Magento.
+- **Nouveauté** — l'addon déclare désormais quels signaux de panier cette installation sait projeter (`POST /api/v1/enforcement/capabilities`, signé en HMAC, envoyé depuis le hook post-init, c'est-à-dire précisément au moment où la version de l'addon change). Sans cela, une règle dont le signal n'arrive jamais renvoie `NO_SIGNAL` à chaque paiement : elle passe en silence, et le marchand voit une règle en ENFORCE qui ne bloque rien. La déclaration ne propage jamais d'erreur : un incident réseau ne peut pas faire échouer une installation ou une mise à jour.
 
 ### 18.0.1.0.0
 
