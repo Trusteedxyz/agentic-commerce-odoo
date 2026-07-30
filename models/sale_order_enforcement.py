@@ -309,6 +309,44 @@ class SaleOrderEnforcement(models.Model):
             except Exception:
                 pass  # Non-fatal — R023 fails open.
 
+    def _trusteed_signals_provided(self) -> list:
+        """Spec-048 4.9 — señales de carrito que ESTA instalación sabe proyectar.
+
+        Es la mitad "qué aporto" del contrato cuya otra mitad es
+        ``RULE_SIGNALS_READ`` ("qué lee cada regla") en el servidor. Cruzarlas
+        convierte el silencio de ``NO_SIGNAL`` —una regla activada en ENFORCE
+        que nunca dispara porque su señal no llega— en un aviso que el
+        comerciante ve al activarla.
+
+        La lista NO se mantiene a ojo: el gate
+        ``signals-provided-plugin-declarations.test.ts`` (en
+        ``packages/shared``) escanea el cuerpo de este modelo y exige que
+        coincida exactamente con las claves que escribe. Corre siempre, que es
+        más de lo que puede decirse de esta suite: a este entorno le falta el
+        módulo ``odoo`` y los tests ni se recolectan.
+        """
+        return [
+            "_agent_key_age_hours",
+            "_agent_token_nonce_unavailable",
+            "_agent_token_replay",
+            "_agent_token_signature_invalid",
+            "_autorenew",
+            "_b2b_order",
+            "_lowest_stock",
+            "_price_delta_bps",
+            "_product_categories",
+            "_product_platform",
+            "_purchase_order_hash",
+            "_requested_scopes",
+            "_return_policy_mismatch",
+            "_shipping_po_box",
+            "_stored_value_cents",
+            "_subscription",
+        ]
+
+    # SIGNALS_PROVIDED_BUILDER_START — ancla del gate de 4.9: todo lo que se
+    # escriba en ``cart_attributes`` de aquí abajo tiene que estar en
+    # ``_trusteed_signals_provided()``.
     def _trusteed_offline_context(self) -> tuple[dict, dict]:
         """App Store remediation follow-up (2026-07-11/12) — build the
         minimal ``(order_context, cart_attributes)`` pair the offline

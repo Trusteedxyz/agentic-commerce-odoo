@@ -153,14 +153,25 @@ def verify_agent_token(
         return None
 
     # Step 6 — Nonce replay detection
+    #
+    # H4 (verificación 2026-07-28) — el `nonce` es OBLIGATORIO. El schema
+    # canónico lo exige con 16..64 caracteres (`AgentTokenPayloadSchema` en
+    # packages/shared/src/enforcement/types.ts) y el verificador de WooCommerce
+    # ya lo rechazaba fuera de rango. Aquí la deduplicación colgaba de `if
+    # nonce:`, así que un token que simplemente OMITÍA el claim se saltaba
+    # entera la detección de replay offline. Fail-closed, igual que WC/PS.
     nonce: str = payload.get("nonce", "")
-    if nonce:
-        _evict_expired_nonces(now)
-        nonce_key = hashlib.sha256(f"{agent_did}{nonce}".encode("utf-8")).hexdigest()
-        if nonce_key in _NONCE_CACHE and _NONCE_CACHE[nonce_key] > now:
-            _logger.warning("CEL token verify: replay detected for agent %s", agent_did)
-            return None
-        _NONCE_CACHE[nonce_key] = now + _NONCE_TTL_SECONDS
+    if not 16 <= len(nonce) <= 64:
+        _logger.debug(
+            "CEL token verify: nonce missing or out of range (len=%d)", len(nonce)
+        )
+        return None
+    _evict_expired_nonces(now)
+    nonce_key = hashlib.sha256(f"{agent_did}{nonce}".encode("utf-8")).hexdigest()
+    if nonce_key in _NONCE_CACHE and _NONCE_CACHE[nonce_key] > now:
+        _logger.warning("CEL token verify: replay detected for agent %s", agent_did)
+        return None
+    _NONCE_CACHE[nonce_key] = now + _NONCE_TTL_SECONDS
 
     # HIGH-3 fix: iss MUST match the kid-derived DID to prevent key-confusion.
     # An attacker with any resolver-listed DID could sign with their key but

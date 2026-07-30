@@ -189,6 +189,7 @@ def post_init_hook(env):
     Also seeds the FR-018b per-tool toggles (payments default OFF / opt-in).
     """
     _seed_tool_toggles(env)
+    _report_signal_capabilities(env)
 
     # Resolve the schema arg model — absent on Odoo 18.x without the AI App module
     SchemaArg = env.get("ir.actions.server.schema.arg")
@@ -233,4 +234,29 @@ def post_init_hook(env):
             "trusteed post_init_hook: created %s ai_schema rows for '%s'",
             len(args),
             xml_id,
+        )
+
+
+def _report_signal_capabilities(env):
+    """Spec-048 4.9 — declara al servidor qué señales de carrito aporta este addon.
+
+    Va en el post-init porque es exactamente cuando cambia la versión del
+    addon, que es lo único que hace variar el reporte. Nunca propaga: un fallo
+    de red aquí no puede tumbar una instalación o actualización.
+    """
+    try:
+        from odoo.modules.module import get_manifest
+
+        version = str(get_manifest("trusteed").get("version", "0.0.0"))
+    except Exception:  # noqa: BLE001 — la versión es informativa, no crítica
+        version = "0.0.0"
+
+    try:
+        from .models.capabilities_reporter import maybe_report
+
+        maybe_report(env, version)
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning(
+            "trusteed post_init_hook: reporte de capacidades de señales fallido: %s",
+            exc,
         )
