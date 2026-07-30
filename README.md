@@ -59,7 +59,7 @@ Trusteed consolidates a Trust Center, a signed-receipts ledger, and 5 native age
 ### Manual install
 
 1. **Download the installable `.zip`** from the latest GitHub Release:
-   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.0.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.0.0.zip)
+   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.1.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.1.0.zip)
    — or browse all versions at the [Releases page](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
 2. Extract it into your Odoo `addons_path` — the extracted folder must be named `trusteed` (this is the addon's technical name).
 3. Restart Odoo: `systemctl restart odoo` (or equivalent for your deployment).
@@ -124,6 +124,11 @@ After installation, a **Trusteed** top-level menu appears in the Odoo Back Offic
 **Can I install this on Odoo Online (SaaS)?** No — Odoo Online does not allow custom third-party modules. Use Odoo.sh or an on-premise deployment.
 
 ## Changelog
+
+### 18.0.1.1.0
+
+- **Security fix** — the agent token verifier's replay detection hung off `if nonce:`, so a token that simply omitted the `nonce` claim skipped offline replay detection entirely. The claim is now mandatory (16–64 characters, as the canonical token schema requires) and a token without it is rejected — fail-closed, matching the WooCommerce, PrestaShop and Magento connectors.
+- **Added** — the addon now reports which cart signals this installation can project (`POST /api/v1/enforcement/capabilities`, HMAC-signed, sent from the post-init hook, which is exactly when the addon version changes). Without it, a rule whose signal never arrives returns `NO_SIGNAL` on every checkout: it passes silently, and the merchant sees a rule in ENFORCE that blocks nothing. The report never propagates a failure — a network error there cannot break an install or upgrade.
 
 ### 18.0.1.0.0
 
