@@ -59,7 +59,7 @@ Trusteed consolida un Trust Center, un libro de recibos firmados y 5 herramienta
 ### Instalación manual
 
 1. **Descarga el `.zip` instalable** desde la última Release de GitHub:
-   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.0.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.0.0.zip)
+   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.1.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.1.0.zip)
    — o consulta todas las versiones en la [página de Releases](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
 2. Extráelo en tu `addons_path` de Odoo — la carpeta extraída debe llamarse `trusteed` (es el nombre técnico del addon).
 3. Reinicia Odoo: `systemctl restart odoo` (o el equivalente en tu despliegue).
@@ -124,6 +124,11 @@ Tras la instalación, aparece un menú de nivel superior **Trusteed** en el Back
 **¿Puedo instalarlo en Odoo Online (SaaS)?** No — Odoo Online no permite módulos de terceros personalizados. Usa Odoo.sh o una instalación on-premise.
 
 ## Historial de cambios
+
+### 18.0.1.1.0
+
+- **Corrección de seguridad** — la detección de repetición del verificador de tokens de agente colgaba de un `if nonce:`, así que un token que simplemente OMITÍA el claim `nonce` se saltaba entera la detección offline. El claim es ahora obligatorio (de 16 a 64 caracteres, como exige el esquema canónico del token) y un token sin él se rechaza — fail-closed, igual que en los conectores de WooCommerce, PrestaShop y Magento.
+- **Novedad** — el addon informa ahora de qué señales de carrito sabe proyectar esta instalación (`POST /api/v1/enforcement/capabilities`, firmado con HMAC, enviado desde el hook post-init, que es justo cuando cambia la versión del addon). Sin eso, una regla cuya señal no llega devuelve `NO_SIGNAL` en cada compra: pasa en silencio, y el comerciante ve una regla en ENFORCE que no bloquea nada. El reporte nunca propaga un fallo: un error de red ahí no puede tumbar una instalación ni una actualización.
 
 ### 18.0.1.0.0
 
