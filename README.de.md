@@ -59,7 +59,7 @@ Trusteed vereint ein Trust Center, ein Verzeichnis signierter Belege und 5 nativ
 ### Manuelle Installation
 
 1. **Laden Sie die installierbare `.zip`** von der neuesten GitHub-Release herunter:
-   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.0.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.0.0.zip)
+   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.1.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.1.0.zip)
    — oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
 2. Entpacken Sie sie in Ihren Odoo-`addons_path` — der entpackte Ordner muss `trusteed` heißen (der technische Name des Addons).
 3. Starten Sie Odoo neu: `systemctl restart odoo` (oder das Äquivalent für Ihre Bereitstellung).
@@ -124,6 +124,11 @@ Nach der Installation erscheint ein **Trusteed**-Menü oberster Ebene im Odoo-Ba
 **Kann ich es auf Odoo Online (SaaS) installieren?** Nein — Odoo Online erlaubt keine benutzerdefinierten Drittanbieter-Module. Verwenden Sie Odoo.sh oder eine On-Premise-Installation.
 
 ## Änderungsprotokoll
+
+### 18.0.1.1.0
+
+- **Sicherheitsfix** — die Replay-Erkennung des Agent-Token-Verifizierers hing an einem `if nonce:`, sodass ein Token, das den `nonce`-Claim schlicht wegließ, die Offline-Replay-Erkennung vollständig umging. Der Claim ist jetzt verpflichtend (16–64 Zeichen, wie es das kanonische Token-Schema verlangt) und ein Token ohne ihn wird abgelehnt — fail-closed, wie in den Konnektoren für WooCommerce, PrestaShop und Magento.
+- **Neu** — das Addon meldet jetzt, welche Warenkorb-Signale diese Installation projizieren kann (`POST /api/v1/enforcement/capabilities`, HMAC-signiert, aus dem Post-Init-Hook gesendet — genau dann ändert sich die Addon-Version). Ohne das liefert eine Regel, deren Signal nie eintrifft, bei jedem Checkout `NO_SIGNAL`: sie passiert stillschweigend, und der Händler sieht eine Regel in ENFORCE, die nichts blockiert. Die Meldung reicht niemals einen Fehler weiter — ein Netzwerkproblem darf keine Installation oder Aktualisierung zum Scheitern bringen.
 
 ### 18.0.1.0.0
 
