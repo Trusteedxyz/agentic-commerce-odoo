@@ -20,7 +20,8 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-_DOCS_URL = "https://docs.trusteed.xyz/embed/odoo-onprem"
+# `docs.trusteed.xyz` does not resolve (NXDOMAIN, verified 2026-08-03).
+_DOCS_URL = "https://trusteed.xyz/en/integrations/odoo"
 
 
 def pre_init_hook(env):
