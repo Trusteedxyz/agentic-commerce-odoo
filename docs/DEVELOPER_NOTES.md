@@ -17,7 +17,7 @@ Embeds the Trusteed Trust Center and Merchant Center inside the Odoo 18 Back Off
 
 - Odoo 18.0 (Community or Enterprise)
 - Python 3.10+
-- A Trusteed account at app.trusteed.xyz
+- A Trusteed account at trusteed.xyz/dashboard
 - Odoo.sh or on-premise deployment
 
 ## Installation

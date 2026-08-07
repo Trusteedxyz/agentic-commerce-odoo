@@ -88,7 +88,7 @@ Luego en Odoo: **Ajustes → Aplicaciones → Trusteed → Instalar**.
 El asistente de configuración rápida (**Trusteed → Quick Setup**) guía todo el flujo:
 
 1. **Bienvenida** — confirma los requisitos previos (una cuenta Trusteed + salida HTTPS desde el servidor de Odoo).
-2. **Conectar** — abre el Portal de Trusteed en [app.trusteed.xyz](https://app.trusteed.xyz), donde navegas a **Conectar una tienda → Odoo**.
+2. **Conectar** — abre el Portal de Trusteed en [trusteed.xyz/dashboard](https://trusteed.xyz/dashboard), donde navegas a **Conectar una tienda → Odoo**.
 3. **Credenciales** — pega tu **Merchant ID** y tu **Bootstrap Secret** (64 caracteres hexadecimales).
 4. **Prueba** — verifica la conectividad antes de finalizar.
 

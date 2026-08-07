@@ -2,7 +2,7 @@
 
 Guides the administrator through:
   welcome     — explanation + group check
-  connect     — instructions to visit app.trusteed.xyz/connect
+  connect     — instructions to visit trusteed.xyz/dashboard/onboarding/odoo
   credentials — paste Merchant ID + Bootstrap Secret → persists to ir.config_parameter
   test        — fires the internal /trusteed/token endpoint → shows result
 
@@ -23,7 +23,7 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
-_PORTAL_URL = "https://app.trusteed.xyz/connect"
+_PORTAL_URL = "https://trusteed.xyz/dashboard/onboarding/odoo"
 
 
 class TrusteedSetupWizard(models.TransientModel):

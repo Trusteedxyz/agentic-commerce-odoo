@@ -41,7 +41,7 @@
                   Center in 4 quick steps. You will need:
                 </p>
                 <ul>
-                  <li>A Trusteed account at <strong>app.trusteed.xyz</strong></li>
+                  <li>A Trusteed account at <strong>trusteed.xyz/dashboard</strong></li>
                   <li>Outbound HTTPS access from this server to <strong>api.trusteed.xyz</strong></li>
                   <li>The <em>Trusteed Administrator</em> role on your user profile</li>
                 </ul>
@@ -62,7 +62,7 @@
                 <ol>
                   <li>
                     Open the portal:
-                    <a href="https://app.trusteed.xyz/connect"
+                    <a href="https://trusteed.xyz/dashboard/onboarding/odoo"
                        target="_blank"
                        rel="noopener noreferrer"
                        class="btn btn-sm btn-secondary ms-2">
