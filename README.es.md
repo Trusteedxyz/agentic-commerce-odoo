@@ -125,6 +125,15 @@ Tras la instalación, aparece un menú de nivel superior **Trusteed** en el Back
 
 ## Historial de cambios
 
+### 18.0.1.1.2
+
+- **Corregido** — el bundle del panel de administración (`static/src/js/admin-spa.js`) se distribuía sin minificar: 869 KB / 25.064 líneas en vez de los 490 KB / 41 líneas que produce el comando de build documentado (`pnpm run build:odoo`). Funcionaba igual, pero su procedencia no se podía verificar. Reconstruido desde la fuente; ahora coincide carácter a carácter con lo que produce el comando.
+- **Corregido** — la regla R047 (importe mínimo de aportación) no tenía campo en el panel de administración: sus parámetros existían en el esquema pero solo se podían configurar por API. Corregido también: al mostrar una categoría del comercio, se imprimían los delimitadores anti-inyección (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) alrededor en vez de quitarlos para la visualización.
+
+### 18.0.1.1.1
+
+- **Corregido** — `_DOCS_URL` enviaba al comercio a `https://docs.trusteed.xyz/embed/odoo-onprem`, un host que devuelve NXDOMAIN. Cualquier comercio que siguiera el enlace de documentación desde el módulo recibía un error del navegador en vez de la guía de integración. Ahora apunta a `https://trusteed.xyz/es/integrations/odoo`.
+
 ### 18.0.1.1.0
 
 - **Corrección de seguridad** — la detección de repetición del verificador de tokens de agente colgaba de un `if nonce:`, así que un token que simplemente OMITÍA el claim `nonce` se saltaba entera la detección offline. El claim es ahora obligatorio (de 16 a 64 caracteres, como exige el esquema canónico del token) y un token sin él se rechaza — fail-closed, igual que en los conectores de WooCommerce, PrestaShop y Magento.

@@ -125,6 +125,15 @@ Nach der Installation erscheint ein **Trusteed**-Menü oberster Ebene im Odoo-Ba
 
 ## Änderungsprotokoll
 
+### 18.0.1.1.2
+
+- **Behoben** — das Admin-Panel-Bundle (`static/src/js/admin-spa.js`) wurde unminifiziert ausgeliefert: 869 KB / 25.064 Zeilen statt der 490 KB / 41 Zeilen, die der dokumentierte Build-Befehl (`pnpm run build:odoo`) tatsächlich erzeugt. Es funktionierte trotzdem, aber die Herkunft ließ sich nicht verifizieren. Neu aus der Quelle gebaut; das kompilierte Bundle stimmt jetzt zeichengenau mit der Ausgabe des Build-Befehls überein.
+- **Behoben** — die Regel R047 (Mindestbeitrag) hatte kein Formularfeld im Admin-Panel: ihre Parameter existierten im Schema, konnten aber nur über die API gesetzt werden. Ebenfalls behoben: Beim Anzeigen einer Händler-Kategorie wurden die Anti-Injection-Trennzeichen (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) mit ausgegeben, statt sie für die Darstellung zu entfernen.
+
+### 18.0.1.1.1
+
+- **Behoben** — `_DOCS_URL` verwies auf `https://docs.trusteed.xyz/embed/odoo-onprem`, einen Host, der NXDOMAIN zurückgibt. Jeder Händler, der dem In-App-Dokumentationslink folgte, erhielt einen Browserfehler statt der Integrationsanleitung. Verweist jetzt auf `https://trusteed.xyz/en/integrations/odoo`.
+
 ### 18.0.1.1.0
 
 - **Sicherheitsfix** — die Replay-Erkennung des Agent-Token-Verifizierers hing an einem `if nonce:`, sodass ein Token, das den `nonce`-Claim schlicht wegließ, die Offline-Replay-Erkennung vollständig umging. Der Claim ist jetzt verpflichtend (16–64 Zeichen, wie es das kanonische Token-Schema verlangt) und ein Token ohne ihn wird abgelehnt — fail-closed, wie in den Konnektoren für WooCommerce, PrestaShop und Magento.

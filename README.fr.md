@@ -125,6 +125,15 @@ Après l'installation, un menu de premier niveau **Trusteed** apparaît dans le 
 
 ## Journal des modifications
 
+### 18.0.1.1.2
+
+- **Corrigé** — le bundle du panneau d'administration (`static/src/js/admin-spa.js`) était distribué non minifié : 869 Ko / 25 064 lignes au lieu des 490 Ko / 41 lignes que produit réellement la commande de build documentée (`pnpm run build:odoo`). Il fonctionnait quand même, mais sa provenance ne pouvait pas être vérifiée. Reconstruit depuis la source ; le bundle compilé correspond désormais caractère pour caractère à ce que produit la commande.
+- **Corrigé** — la règle R047 (montant minimum de contribution) n'avait pas de champ de formulaire dans le panneau d'administration : ses paramètres existaient dans le schéma mais ne pouvaient être définis que via l'API. Également corrigé : l'affichage d'une catégorie marchande imprimait les délimiteurs anti-injection (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) autour, au lieu de les retirer pour l'affichage.
+
+### 18.0.1.1.1
+
+- **Corrigé** — `_DOCS_URL` envoyait le marchand vers `https://docs.trusteed.xyz/embed/odoo-onprem`, un hôte qui renvoie NXDOMAIN. Tout marchand suivant le lien de documentation intégré recevait une erreur de navigateur au lieu du guide d'intégration. Pointe désormais vers `https://trusteed.xyz/en/integrations/odoo`.
+
 ### 18.0.1.1.0
 
 - **Correctif de sécurité** — la détection de rejeu du vérificateur de jetons d'agent reposait sur un `if nonce:`, si bien qu'un jeton omettant simplement le claim `nonce` échappait entièrement à la détection hors ligne. Le claim est désormais obligatoire (16 à 64 caractères, comme l'exige le schéma canonique du jeton) et un jeton qui en est dépourvu est rejeté — fail-closed, comme dans les connecteurs WooCommerce, PrestaShop et Magento.
