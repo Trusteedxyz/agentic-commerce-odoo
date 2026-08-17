@@ -3,7 +3,7 @@
     "version": "18.0.1.1.2",
     "summary": "Embed Trusteed Trust Center inside Odoo backoffice (Odoo.sh / on-premise only).",
     "description": """
-Trusteed embed shell — production addon for Odoo 17/18.
+Trusteed embed shell — production addon for Odoo 18.
 
 Provides:
   - Top-level "Trusteed" menu with Trust Center panel (React SPA same-origin).

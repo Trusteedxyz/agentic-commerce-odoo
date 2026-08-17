@@ -118,7 +118,7 @@ class TrusteedPanel extends Component {
    */
   /**
    * Resolve which SPA section to mount. Defaults to "trust-center" (the Trust
-   * Center menu); the "Mis ventas" menu passes `trusteed_section: "mis-ventas"`
+   * Center menu); the "My Sales" menu passes `trusteed_section: "mis-ventas"`
    * via its client-action context so the same panel mounts the receipts list +
    * comprobante download (dispute-evidence Fase A / Bloque 3 / T9).
    */

@@ -1,45 +1,45 @@
-# E2E T091 — Odoo Agentic Tools Manual Runbook
+# Odoo Agentic Tools — Manual Verification Runbook
 
-**Spec:** 046 — Cross-Platform Agentic Tools
-**Scope:** Validate the 5 canonical Trusteed agentic tools register as `ir.actions.server` with `usage='ai_tool'` in Odoo 18 and execute correctly.
-**Time:** ~25 minutes (manual).
+**Scope:** Validate that the 5 Trusteed agentic tools register as `ir.actions.server` with
+`usage='ai_tool'`, that the per-tool availability gate behaves as documented, and that the
+Trust Receipt JWS attachment lands on posted customer invoices.
+**Time:** ~20 minutes (manual).
 
-> Automated alternative: `e2e/spec-046-agentic-tools.spec.ts` covers catalog endpoint with mocked services. This runbook validates `ir.actions.server` registration and chatter integration end-to-end.
+> This is an internal verification runbook for maintainers of this addon. It is not an
+> installation guide — see `README.md` for installation.
 
 ---
 
 ## 1. Prerequisites
 
-- Docker + docker compose v2
-- Odoo 18 community
-- Python 3.10+ (for invoking shell)
+- An Odoo 18 instance (Odoo.sh or on-premise) with this addon on its `addons_path`.
+- Shell access to the Odoo process (`odoo shell`).
+- Docker + docker compose v2, if you prefer a throwaway local stack.
+- Python 3.10+.
+
+The commands below assume a container named `odoo-staging` and a database named `odoo`.
+Adapt them to your deployment: any Odoo 18 + PostgreSQL stack with the addon mounted works.
 
 ## 2. Setup (5 min)
 
 ```bash
-cd /home/sejano77/Projects/MCPWebStore
-
-# 1. Start Odoo stack
-docker compose -f e2e/docker/docker-compose.odoo.yml up -d
-sleep 60   # Postgres + Odoo init
-
-# 2. Verify Odoo reachable
+# 1. Verify Odoo is reachable
 curl -fsS http://localhost:8069/web/health -o /dev/null && echo "Odoo up"
 
-# 3. Install Trusteed addon (mounted addon path)
+# 2. Install the addon (technical name: trusteed)
 docker exec odoo-staging odoo \
   -d odoo --init=trusteed --stop-after-init \
   --without-demo=False
 
-# 4. Configure bootstrap token via system parameters
+# 3. Configure the bootstrap credentials via system parameters
 docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
-env['ir.config_parameter'].sudo().set_param('trusteed.bootstrap_secret', 'test-token-789')
-env['ir.config_parameter'].sudo().set_param('trusteed.api_base', 'http://host.docker.internal:3001')
+env['ir.config_parameter'].sudo().set_param('trusteed.bootstrap_secret', '<your-bootstrap-secret>')
+env['ir.config_parameter'].sudo().set_param('trusteed.api_base', 'https://api.trusteed.xyz')
 env.cr.commit()
 PY
 ```
 
-## 3. Verify ir.actions.server Registration (3 min)
+## 3. Verify `ir.actions.server` Registration (3 min)
 
 ```bash
 docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
@@ -53,7 +53,9 @@ for a in actions:
 PY
 ```
 
-**Expected output (5 records, 4 if `SD_JWT_ENABLED` OFF):**
+**Expected output — always 5 records.** All five are declared unconditionally in
+`data/ai_tools.xml`; no configuration flag changes how many get registered. Whether a tool
+can be *invoked* is a separate, runtime concern (section 4).
 
 ```
 Found 5 ai_tool actions:
@@ -64,11 +66,73 @@ Found 5 ai_tool actions:
   - Trusteed: Dispatch Payment AP2 (experimental)
 ```
 
-## 4. Test sign-trust-receipt (8 min)
+The canonical xml_ids are:
+
+| Tool                     | xml_id                                         |
+| ------------------------ | ---------------------------------------------- |
+| sign-trust-receipt       | `trusteed.action_trusteed_sign_trust_receipt`      |
+| verify-agent-signature   | `trusteed.action_trusteed_verify_agent_signature`  |
+| dispatch-payment-acp     | `trusteed.action_trusteed_dispatch_payment_acp`    |
+| dispatch-payment-x402    | `trusteed.action_trusteed_dispatch_payment_x402`   |
+| dispatch-payment-ap2     | `trusteed.action_trusteed_dispatch_payment_ap2`    |
+
+> **Note on AI-tool discovery.** `usage='ai_tool'` is fully supported by the Odoo AI App in
+> **Odoo 19.0**. On Odoo 18.x the field exists but the AI App discovery UI may not surface
+> these actions; they remain callable via `env.ref(...).run()` and via the post-install hook.
+> See the DESIGN NOTES header in `data/ai_tools.xml`.
+
+## 4. Verify the Availability Gate (5 min)
+
+Two of the five tools are `PLANNED` — their backend is **not deployed**, so they are
+reported unavailable and **always raise `UserError`**, regardless of the merchant's toggle
+(`utils/tool_toggles.py`, `PLANNED_TOOL_IDS`):
+
+- `trusteed/sign-trust-receipt`
+- `trusteed/dispatch-payment-ap2`
+
+The three payment rails default to **OFF** (opt-in); `verify-agent-signature` defaults ON.
 
 ```bash
 docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
-# 1. Create a sale order
+from odoo.exceptions import UserError
+
+# PLANNED tool — must raise, never return a receipt
+try:
+    env['trusteed.ai.tool'].run_sign_trust_receipt('12345')
+    print("FAIL: expected UserError")
+except UserError as e:
+    print(f"OK (planned, unavailable): {e}")
+
+# Disabled-by-default payment rail — must raise until the merchant opts in.
+# The availability/toggle gate runs before argument validation, so placeholder
+# args are enough to exercise it.
+try:
+    env['trusteed.ai.tool'].run_dispatch_payment_x402(
+        'cart-placeholder', 'idem-placeholder', 'merchant-placeholder', {'network': 'base'},
+    )
+    print("unexpected success")
+except UserError as e:
+    print(f"OK (opt-in required): {e}")
+PY
+```
+
+**Verify:** both calls raise `UserError`. The `sign-trust-receipt` message must state that
+the backend is not yet deployed (`planned`).
+
+> There is **no standalone receipt-signing write endpoint.** Trust Receipts are emitted as a
+> side effect of the checkout pipeline and are *read* via `GET /v1/embed/trust/receipts`.
+> Any acceptance criterion expecting `run_sign_trust_receipt` to return a valid JWS is
+> **not achievable today** and must not be asserted.
+
+## 5. Verify the JWS Receipt Attachment (5 min)
+
+The JWS Trust Receipt is attached by the `account.move.action_post()` override
+(`models/account_move_jws.py`), which fetches an **already-issued** receipt via
+`GET /api/v1/trust/receipts/by-order/:orderId`. This path does not involve the
+`sign-trust-receipt` tool at all.
+
+```bash
+docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
 order = env['sale.order'].create({
     'partner_id': env.ref('base.res_partner_1').id,
     'order_line': [(0, 0, {
@@ -77,70 +141,70 @@ order = env['sale.order'].create({
     })],
 })
 order.action_confirm()
-print(f"Sale order: {order.id} ({order.name})")
-
-# 2. Invoke ai_tool action with context
-action = env.ref('trusteed.action_trusteed_sign_trust_receipt')
-result = action.with_context(
-    orderId=str(order.id),
-    amount=int(order.amount_total * 100),
-    currency=order.currency_id.name,
-).run()
-print(f"Result: {result}")
-
-# 3. Verify chatter
-order.message_subscribe()
-messages = order.message_ids.filtered(lambda m: 'Trust Receipt' in (m.body or ''))
-print(f"Chatter messages: {len(messages)}")
-for m in messages[:1]:
-    print(f"  body[:200]: {m.body[:200]}")
+invoice = order._create_invoices()
+invoice.action_post()
+jose = env['ir.attachment'].sudo().search([
+    ('res_model', '=', 'account.move'),
+    ('res_id', '=', invoice.id),
+    ('mimetype', '=', 'application/jose'),
+])
+print(f"Order {order.name} · invoice {invoice.name} · .jose attachments: {len(jose)}")
+for a in jose:
+    print(f"  - {a.name}")
 env.cr.commit()
 PY
 ```
 
 **Verify:**
 
-1. `Result:` dict includes `receiptId`, `jws`, `issuedAt`.
-2. JWS has 3 segments separated by `.`.
-3. Chatter message contains the JWS short ID.
-4. Server log shows `_logger.info` line with the invocation:
+1. If a receipt exists upstream for that order, exactly one `application/jose` attachment is
+   present on the invoice, and the invoice chatter carries the corresponding message.
+2. If no receipt exists (or the API base is unreachable), **zero** attachments and a warning
+   in the log — the override is deliberately non-blocking and must never fail `action_post`.
+3. Re-running `action_post` does not create a second `.jose` attachment (idempotency).
+
+## 6. UI Verification (3 min)
+
+1. Open `http://localhost:8069/web` and log in as an administrator.
+2. **Sales → Orders** (kanban view) — the trust badge renders only when
+   `trusteed_trust_level != 'none'`. On a fresh order with no trust signals, its absence is
+   the expected result, not a failure.
+3. Open the posted invoice — confirm the `.jose` attachment and the chatter message from
+   section 5.
+
+## 7. Acceptance Criteria
+
+- [ ] The `ir.actions.server` query returns **5** records with `usage='ai_tool'`.
+- [ ] All 5 canonical xml_ids from section 3 resolve via `env.ref(...)`.
+- [ ] `run_sign_trust_receipt` raises `UserError` stating the backend is `planned`.
+- [ ] The three payment rails raise `UserError` until explicitly toggled on.
+- [ ] A posted invoice for an order with an upstream receipt carries exactly one
+      `application/jose` attachment; re-posting adds none.
+- [ ] An unreachable API base yields zero attachments and a logged warning, **not** a
+      failed `action_post`.
+
+## 8. Cleanup
 
 ```bash
-docker logs odoo-staging 2>&1 | grep -i 'trusteed.*sign_trust_receipt' | tail -5
+# Uninstall the addon (keeps the database)
+docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
+env['ir.module.module'].search([('name', '=', 'trusteed')]).button_immediate_uninstall()
+env.cr.commit()
+PY
 ```
 
-## 5. UI Verification (3 min)
+If you used a throwaway local stack, tear down its volumes instead.
 
-1. Open `http://localhost:8069/web` and login admin / admin.
-2. Navigate to Sales > Orders > select the created order.
-3. Confirm kanban badge "Trust Receipt ✓" visible (F6 feature).
-4. Click chatter tab — verify Trust Receipt message with JWS attached.
-5. Open `account.move` (invoice) generated for the order — confirm JWS attachment is present (F6).
+## 9. Troubleshooting
 
-## 6. Acceptance Criteria
-
-- [ ] `ir.actions.server` query returns ≥4 records with `usage='ai_tool'`.
-- [ ] `action_trusteed_sign_trust_receipt.run()` returns valid Ed25519 JWS.
-- [ ] Server log shows `_logger.info('trusteed.tool.sign_trust_receipt invoked')`.
-- [ ] Sale order chatter has message with JWS reference.
-- [ ] account.move JWS attachment present (F6).
-
-## 7. Cleanup
-
-```bash
-docker compose -f e2e/docker/docker-compose.odoo.yml down -v
-```
-
-## 8. Troubleshooting
-
-| Symptom                                | Fix                                                                         |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| 0 actions found                        | `--init=trusteed` did not load — re-run with `-u`                           |
-| `KeyError: 'trusteed.bootstrap_secret'` | Re-run system parameter SQL in section 2.4                                  |
-| JWS empty/None                         | Check `trusteed.api_base` reachable from container (`curl` test from inside) |
-| Chatter empty                          | Ensure `order.message_subscribe()` was called before `action.run()`         |
-| AP2 action returns 503                 | Expected — `SD_JWT_ENABLED=0`                                               |
+| Symptom                                       | Fix                                                                                |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 0 actions found                               | `--init=trusteed` did not load the addon — re-run with `-u trusteed`               |
+| `KeyError: 'trusteed.bootstrap_secret'`       | Re-apply the system parameters from section 2                                       |
+| `sign-trust-receipt` returns instead of raising | The availability gate is bypassed — check `PLANNED_TOOL_IDS` in `utils/tool_toggles.py` |
+| Payment rail raises "is disabled"              | Expected until the merchant opts in — **Settings → General Settings → Trusteed**    |
+| No `.jose` attachment                          | No receipt exists upstream for that order, or `trusteed.api_base` is unreachable from the container (`curl` it from inside) |
 
 ---
 
-**Owner:** spec-046 maintainer · **Last updated:** 2026-05-03
+**Audience:** addon maintainers · **Last updated:** 2026-08-17

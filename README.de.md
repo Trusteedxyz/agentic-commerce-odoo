@@ -5,7 +5,7 @@
 Ermöglichen Sie neuen Online-Käufern, den KI-Agenten, sichere und zuverlässige Einkäufe in Ihrem Shop dank Trusteed: dem Netzwerk, das Vertrauen zwischen Unternehmen und Agenten fördert.
 
 - **Legen Sie Ihre Geschäftsregeln fest**: wen Sie zum Kauf zulassen, bis zu welchem Betrag, welche Kategorien Sie Agenten nicht anbieten möchten, Preisgrenzen, Lagerbestände zum Schutz vor potenziell betrügerischen Agenten und mehr.
-- **Manipulationssichere Belege**: Wir erstellen elektronisch signierte und kryptografisch manipulationssichere Belege, die als Nachweis der tatsächlichen Transaktion im Streitfall dienen. Kompatibel mit eIDAS (EU, UK) und eSIGN (USA).
+- **Manipulationssichere Belege**: Wir erstellen kryptografisch signierte Belege (JWS Ed25519), an denen jede Veränderung sichtbar wird und die im Streitfall als Nachweis der tatsächlichen Transaktion dienen. Sie sind an den Beweiskonzepten von eIDAS (EU, UK) und eSIGN (USA) ausgerichtet — eine Signatur fortgeschrittener Art, **keine** qualifizierte: heute gibt es in der Produktion keinen qualifizierten Zeitstempel und kein QTSP-Siegel.
 - **Agentenanalysen**: Sehen Sie Statistiken zu Agentenkäufen — wie viel sie ausgeben, welche Produkte sie kaufen und wie oft.
 - **Agentensperrung**: Blockieren Sie potenziell gefährliche oder problematische Agenten.
 - **Digitale Währungen**: Ermöglicht Käufe in digitalen Währungen dank des X402-Protokolls.
@@ -25,7 +25,7 @@ Ermöglichen Sie neuen Online-Käufern, den KI-Agenten, sichere und zuverlässig
 |--------------------------------------|
 | ![Assistent](screenshots/07-quick-setup-wizard.png) |
 
-Jede Agenten-Transaktion erzeugt einen kryptografisch signierten **Trust Receipt** — einen manipulationssicheren Nachweis (eIDAS-/eSIGN-kompatibel), gelistet unter **My Sales → AI Sales**. Signierschlüssel und ein vollständiges Audit-Protokoll stehen im selben **My Sales**-Menü zur Verfügung, und der Bildschirm **Trust Center** zeigt den Gesamt-Vertrauenswert Ihres Shops.
+Jede Agenten-Transaktion erzeugt einen kryptografisch signierten **Trust Receipt** — einen Nachweis, an dem jede Veränderung sichtbar wird (JWS Ed25519, an den Beweiskonzepten von eIDAS / eSIGN ausgerichtet, ohne qualifizierten Zeitstempel), gelistet unter **My Sales → AI Sales**. Signierschlüssel und ein vollständiges Audit-Protokoll stehen im selben **My Sales**-Menü zur Verfügung, und der Bildschirm **Trust Center** zeigt den Gesamt-Vertrauenswert Ihres Shops.
 
 ## Funktionen
 
@@ -33,12 +33,28 @@ Trusteed vereint ein Trust Center, ein Verzeichnis signierter Belege und 5 nativ
 
 - **Trust Center** — Vertrauenswert des Shops, signierte Trust Receipts, Signierschlüssel, Audit-Protokoll
 - **My Sales** — Bestellungen, Verkäufe an KI-Agenten, Signierschlüssel, Audit-Protokoll, alles in einem Menü
-- **5 native KI-Tools**, bereitgestellt über `ir.actions.server` (`usage='ai_tool'`), automatisch erkannt von Odoos AI App / MCP-Server: `sign-trust-receipt`, `verify-agent-signature`, `dispatch-payment-acp`, `dispatch-payment-x402`, `dispatch-payment-ap2`
+- **5 native KI-Tools**, bereitgestellt über `ir.actions.server` (`usage='ai_tool'`): `sign-trust-receipt`, `verify-agent-signature`, `dispatch-payment-acp`, `dispatch-payment-x402`, `dispatch-payment-ap2` — **es sind heute nicht alle fünf einsatzbereit**, siehe [Status der nativen KI-Tools](#status-der-nativen-ki-tools)
 - **Vertrauens-Badge an der Bestellung** — ein berechnetes Vertrauenswert-Badge, eingefügt in die native `sale.order`-Kanban-Ansicht
 - **Automatischer JWS-Beleganhang** — signierte Trust Receipts werden `account.move`-Datensätzen beim Buchen automatisch angehängt
 - **Multi-Unternehmen-Unterstützung** — stilles erneutes Bootstrapping mit Toast-Benachrichtigung bei Wechsel des aktiven Unternehmens
 - **Schnelleinrichtungs-Assistent** — ein 4-stufiger Onboarding-Ablauf, der Ihre Odoo-Instanz mit Trusteed verbindet
 - **Fail-closed als Standard** — SSRF-geschützte ausgehende Aufrufe, nur HTTPS, die Regeldurchsetzung erlaubt bei Fehlkonfiguration niemals stillschweigend
+
+### Status der nativen KI-Tools
+
+Alle fünf Tools werden bei der Installation registriert, aber nur eines ist standardmäßig aktiviert **und** von einem bereitgestellten Endpunkt gedeckt. Die Schalter finden Sie unter **Einstellungen → Trusteed**.
+
+| Tool | Standard | Status heute |
+|------|----------|--------------|
+| `verify-agent-signature` | aktiviert | **Einsatzbereit** — Signaturprüfung nach RFC 9421 |
+| `dispatch-payment-acp` | **deaktiviert** | Funktioniert, aber Opt-in: agenteninitiierte Zahlung, Sie aktivieren sie selbst |
+| `dispatch-payment-x402` | **deaktiviert** | Funktioniert, aber Opt-in: agenteninitiierte Zahlung, Sie aktivieren sie selbst |
+| `sign-trust-receipt` | aktiviert | **Noch kein Backend bereitgestellt** — meldet sich stets als nicht verfügbar, unabhängig vom Schalter. Belege werden weiterhin vom Checkout-Ablauf erzeugt und sind unter **My Sales → AI Sales** lesbar |
+| `dispatch-payment-ap2` | **deaktiviert** | **Noch kein Backend bereitgestellt** — meldet sich stets als nicht verfügbar, unabhängig vom Schalter |
+
+Einen Schalter einzuschalten macht ein Tool ohne bereitgestelltes Backend niemals aufrufbar; der Schalter bewahrt nur Ihre Voreinstellung für den Zeitpunkt, an dem dieses Backend verfügbar wird.
+
+**Tool-Erkennung.** `usage='ai_tool'` wird von Odoos AI App in **Odoo 19.0** vollständig unterstützt. In der Serie Odoo 18.x, auf die dieses Addon zielt, existiert das Feld, aber die Erkennungs-Oberfläche der AI App zeigt diese Aktionen möglicherweise nicht — programmatisch aufrufbar bleiben sie (`env.ref(...).run()`).
 
 ## Kompatibilität
 
@@ -53,14 +69,17 @@ Trusteed vereint ein Trust Center, ein Verzeichnis signierter Belege und 5 nativ
 - Odoo 18.0, auf Odoo.sh oder einer On-Premise-Installation
 - Python 3.10+
 - Ein Trusteed-Konto — [kostenlos registrieren auf trusteed.xyz](https://trusteed.xyz)
+- **Odoo-Apps** (werden automatisch als Abhängigkeiten installiert): `base`, `web`, `mail`, `sale`, `account`, `stock`, `sale_stock`
+- **Python-Paket `cryptography`** — im Manifest unter `external_dependencies` deklariert; ohne es verweigert Odoo die Installation des Addons. Wird für die Ed25519-Signaturprüfung des Regel-Snapshots, die Agentenidentität nach RFC 9421 und die JCS-Kanonisierung nach RFC 8785 verwendet. Installation mit `pip install cryptography` auf dem Odoo-Server (bei Odoo.sh: in Ihre `requirements.txt` aufnehmen).
 
 ## Installation
 
 ### Manuelle Installation
 
 1. **Laden Sie die installierbare `.zip`** von der neuesten GitHub-Release herunter:
-   [**⬇ trusteed-agentic-commerce-odoo-18.0.1.1.0.zip**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest/download/trusteed-agentic-commerce-odoo-18.0.1.1.0.zip)
-   — oder durchsuchen Sie alle Versionen auf der [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
+   [**⬇ Neueste Version herunterladen**](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases/latest)
+   — die `.zip` ist dieser Release als Anhang beigefügt. Ältere Versionen finden Sie auf der
+   [Releases-Seite](https://github.com/Trusteedxyz/agentic-commerce-odoo/releases).
 2. Entpacken Sie sie in Ihren Odoo-`addons_path` — der entpackte Ordner muss `trusteed` heißen (der technische Name des Addons).
 3. Starten Sie Odoo neu: `systemctl restart odoo` (oder das Äquivalent für Ihre Bereitstellung).
 4. Im Odoo-Back-Office: **Einstellungen → Entwicklermodus aktivieren**.
@@ -77,9 +96,7 @@ bash bin/build-zip.sh   # erzeugt dist/trusteed-agentic-commerce-odoo-<version>.
 
 ### Docker / lokale Entwicklung
 
-```bash
-docker compose -f e2e/docker/odoo-staging.yml up -d
-```
+Die Compose-Datei, die das Team für Staging verwendet (`e2e/docker/odoo-staging.yml`), liegt im privaten Entwicklungs-Monorepo von Trusteed und ist **nicht** Teil dieses Repositorys. Um das Addon in Docker zu testen, starten Sie einen beliebigen Standard-Container für Odoo 18 — siehe das [offizielle Odoo-Image](https://hub.docker.com/_/odoo) — und mounten Sie den entpackten Ordner `trusteed` in einen Pfad, der im `addons_path` dieses Containers steht.
 
 Dann in Odoo: **Einstellungen → Apps → Trusteed → Installieren**.
 
@@ -113,11 +130,23 @@ Nach der Installation erscheint ein **Trusteed**-Menü oberster Ebene im Odoo-Ba
 | My Sales | Meine Bestellungen, AI Sales, Schlüssel, Audit — alles an einem Ort |
 | Einstellungen | Merchant ID, Bootstrap Secret, API-Basis-URL und Toggles je Tool |
 
+Das Admin-Panel ist ein Bundle, das mit den Konnektoren für WooCommerce und PrestaShop geteilt wird, und enthält daher auch Bereiche, die der Odoo-Host nicht bereitstellt: `inicio`, `mis-reglas`, `seguridad`, `agentes`, `payment-methods` und `merchant-center`. Die Odoo-Client-Aktionen laden ausschließlich `trust-center` und `mis-ventas`, und nichts innerhalb dieser beiden Seiten verlinkt auf die übrigen — in Odoo sind diese Bereiche also nicht erreichbar, und die Tabelle oben ist die vollständige Liste dessen, was Sie aus dem Back-Office öffnen können.
+
+## Regeldurchsetzung beim Checkout
+
+Über das Trust Center hinaus installiert das Addon eine Durchsetzungsschicht, die auf den eigenen Verkaufsaufträgen des Shops arbeitet (`models/sale_order_enforcement.py` und die Dateien darum herum). Im Überblick:
+
+- Sie fängt die **Bestätigung des Verkaufsauftrags** über alle drei Eintrittspfade ab — das `action_confirm` aus Oberfläche und RPC, das Anlegen eines Auftrags direkt mit `state='sale'` sowie das Schreiben von `state='sale'` auf einen bestehenden Auftrag — damit ein headless XML-RPC- oder JSON-RPC-Client die Prüfung nicht umgehen kann.
+- Bei jeder Bestätigung lädt sie Ihren **Regel-Snapshot** von Trusteed, prüft dessen JWS-Ed25519-Signatur und hält ihn 5 Minuten im Prozess-Cache.
+- Liegt ein Agenten-Token vor, wird es offline geprüft; eine **BLOCK**-Entscheidung verweigert die Bestätigung mit einem `trusteed:R0xx`-Fehler, der die auslösende Regel benennt.
+- Ist der Snapshot nicht verfügbar, der Notausschalter aktiv oder tritt etwas Unerwartetes ein, entscheidet der konfigurierte **Fallback-Modus**: `strict` blockiert, `balanced` und `permissive` lassen den Auftrag durch. Die Bestätigung stürzt nie ab.
+- Eine geplante Aktion, **„Trusteed CEL: Refresh Rule Snapshot“** (`data/cron.xml`), wärmt diesen Cache **alle 5 Minuten** vor, damit der erste Auftrag jedes Intervalls die Latenz des Kaltabrufs nicht bezahlt. Zu finden und abschaltbar unter **Einstellungen → Technisch → Automatisierung → Geplante Aktionen**.
+
 ## FAQ
 
 **Welche Daten werden gesendet?** Nur was Regeldurchsetzung und Trust Receipts benötigen (Bestellsummen, Land, Agentenidentität). Es laufen niemals Zahlungskartendaten über Trusteed. Die gesamte Kommunikation erfolgt über HTTPS.
 
-**Welche Agenten werden unterstützt?** Jeder Agent, der über einen MCP-kompatiblen Client verbunden ist und die 5 nativen KI-Tools dieses Addons aufruft, einschließlich Claude Desktop und Odoos eigener AI App / MCP-Server.
+**Welche Agenten werden unterstützt?** Jeder Agent, der über einen MCP-kompatiblen Client verbunden ist und die nativen KI-Tools dieses Addons aufruft, einschließlich Claude Desktop. Zwei Einschränkungen, die man kennen sollte, bevor man darauf plant: heute ist nur `verify-agent-signature` aktiviert und einsatzbereit (siehe [Status der nativen KI-Tools](#status-der-nativen-ki-tools)), und Odoos eigene AI App zeigt diese Tools nur unter Odoo 19.0 zuverlässig an — unter 18.x erscheinen sie in deren Erkennungs-Oberfläche möglicherweise nicht.
 
 **Verlangsamt es meinen Shop?** Nein. Die Regeldurchsetzung läuft synchron nur beim jeweiligen Transaktionsschritt, mit Fail-closed als Standard statt einer pauschalen Erlaubnis-Rückfallebene.
 
@@ -128,7 +157,7 @@ Nach der Installation erscheint ein **Trusteed**-Menü oberster Ebene im Odoo-Ba
 ### 18.0.1.1.2
 
 - **Behoben** — das Admin-Panel-Bundle (`static/src/js/admin-spa.js`) wurde unminifiziert ausgeliefert: 869 KB / 25.064 Zeilen statt der 490 KB / 41 Zeilen, die der dokumentierte Build-Befehl (`pnpm run build:odoo`) tatsächlich erzeugt. Es funktionierte trotzdem, aber die Herkunft ließ sich nicht verifizieren. Neu aus der Quelle gebaut; das kompilierte Bundle stimmt jetzt zeichengenau mit der Ausgabe des Build-Befehls überein.
-- **Behoben** — die Regel R047 (Mindestbeitrag) hatte kein Formularfeld im Admin-Panel: ihre Parameter existierten im Schema, konnten aber nur über die API gesetzt werden. Ebenfalls behoben: Beim Anzeigen einer Händler-Kategorie wurden die Anti-Injection-Trennzeichen (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) mit ausgegeben, statt sie für die Darstellung zu entfernen.
+- **Behoben** — `R047.customer-confirmation` (die Regel, die den Käufer bittet, einen Agentenauftrag über einen separaten Kanal per E-Mail oder SMS zu bestätigen) hatte kein Formularfeld im Admin-Panel: ihre Betragsschwelle existierte im Schema, konnte aber nur über die API gesetzt werden. Ebenfalls behoben: Beim Anzeigen einer Händler-Kategorie wurden die Anti-Injection-Trennzeichen (`<<<MERCHANT_CONTENT_START>>> … <<<MERCHANT_CONTENT_END>>>`) mit ausgegeben, statt sie für die Darstellung zu entfernen.
 
 ### 18.0.1.1.1
 
@@ -150,4 +179,4 @@ Nach der Installation erscheint ein **Trusteed**-Menü oberster Ebene im Odoo-Ba
 
 ## Lizenz
 
-MIT. Vollständiger Text siehe [LICENSE](LICENSE).
+LGPL-3.0. Vollständiger Text siehe [LICENSE](LICENSE) — entspricht der in `__manifest__.py` deklarierten Lizenz.

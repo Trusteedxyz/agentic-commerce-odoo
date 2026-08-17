@@ -11,7 +11,7 @@
               action="action_trusteed_client"
               sequence="10"/>
     <menuitem id="menu_trusteed_ventas"
-              name="Mis ventas"
+              name="My Sales"
               parent="menu_trusteed_root"
               action="action_trusteed_ventas"
               sequence="20"/>

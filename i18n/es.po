@@ -16,6 +16,14 @@ msgid "Trust Center"
 msgstr "Centro de Confianza"
 
 #. module: trusteed
+msgid "My Sales"
+msgstr "Mis ventas"
+
+#. module: trusteed
+msgid "Trusteed — My Sales"
+msgstr "Trusteed — Mis ventas"
+
+#. module: trusteed
 msgid "Settings"
 msgstr "Configuración"
 
