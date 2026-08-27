@@ -15,5 +15,14 @@
       <field name="target">current</field>
       <field name="context">{'trusteed_section': 'mis-ventas'}</field>
     </record>
+
+    <!-- Spec 065 F1 — Dashboard Agent-Friendly: monta la sección
+         agent-readiness (columna Observada) reusando el mismo panel. -->
+    <record id="action_trusteed_agent_readiness" model="ir.actions.client">
+      <field name="name">Trusteed — Agent Readiness</field>
+      <field name="tag">trusteed_panel</field>
+      <field name="target">current</field>
+      <field name="context">{'trusteed_section': 'agent-readiness'}</field>
+    </record>
   </data>
 </odoo>

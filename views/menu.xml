@@ -15,6 +15,11 @@
               parent="menu_trusteed_root"
               action="action_trusteed_ventas"
               sequence="20"/>
+    <menuitem id="menu_trusteed_agent_readiness"
+              name="Agent Readiness"
+              parent="menu_trusteed_root"
+              action="action_trusteed_agent_readiness"
+              sequence="25"/>
     <menuitem id="menu_trusteed_settings"
               name="Settings"
               parent="menu_trusteed_root"
