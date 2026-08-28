@@ -10,6 +10,7 @@ Permite que los nuevos compradores online, los agentes de IA, realicen compras e
 - **Bloqueo de agentes**: bloquea agentes potencialmente peligrosos o problemáticos.
 - **Monedas digitales**: habilita compras en monedas digitales gracias al protocolo X402.
 - **Transacciones entre pares**: habilita comercio directo entre agentes y comerciantes.
+- **Panel de preparación para agentes**: comprueba en vivo si los agentes de IA pueden comprar hoy en tu tienda — tres vistas independientes (lo que dicen otros, lo que prometes vs. lo que haces, lo que hemos observado), sin fusionarlas en una sola puntuación inventada.
 
 ## Capturas de pantalla
 
@@ -21,9 +22,9 @@ Permite que los nuevos compradores online, los agentes de IA, realicen compras e
 |------------------------|----------------------------|---------|
 | ![Claves](screenshots/04-my-sales-keys.png) | ![Auditoría](screenshots/05-my-sales-audit.png) | ![Ajustes](screenshots/06-settings.png) |
 
-| Asistente de configuración rápida |
-|----------------------------------------|
-| ![Asistente](screenshots/07-quick-setup-wizard.png) |
+| Asistente de configuración rápida | Agent Readiness |
+|----------------------------------------|------------------|
+| ![Asistente](screenshots/07-quick-setup-wizard.png) | ![Agent Readiness](screenshots/08-agent-readiness.png) |
 
 Cada transacción de un agente genera un **recibo de confianza** firmado criptográficamente — un registro en el que cualquier alteración queda a la vista (JWS Ed25519, alineado con los conceptos probatorios de eIDAS / eSIGN, sin sello de tiempo cualificado) listado en **Mis ventas → AI Sales**. Las claves de firma y un registro de auditoría completo están disponibles en el mismo menú **Mis ventas**, y la pantalla **Trust Center** muestra la puntuación de confianza global de tu tienda.
 

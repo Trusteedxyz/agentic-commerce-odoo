@@ -10,6 +10,7 @@ Permettez aux nouveaux acheteurs en ligne, les agents IA, d'effectuer des achats
 - **Blocage des agents** : bloquez les agents potentiellement dangereux ou problématiques.
 - **Monnaies numériques** : permet les achats en monnaies numériques grâce au protocole X402.
 - **Transactions pair à pair** : permet le commerce direct entre agents et commerçants.
+- **Tableau de bord Agent Readiness** : vérifie en direct si les agents IA peuvent réellement acheter dès aujourd'hui dans votre boutique — trois vues indépendantes (ce que disent les autres, ce que vous promettez vs. ce que vous faites, ce que nous avons observé), sans les fusionner en un score inventé.
 
 ## Captures d'écran
 
@@ -21,9 +22,9 @@ Permettez aux nouveaux acheteurs en ligne, les agents IA, d'effectuer des achats
 |---------------------|----------------------|------------|
 | ![Clés](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Paramètres](screenshots/06-settings.png) |
 
-| Assistant de configuration rapide |
-|-----------------------------------------|
-| ![Assistant](screenshots/07-quick-setup-wizard.png) |
+| Assistant de configuration rapide | Agent Readiness |
+|-----------------------------------------|------------------|
+| ![Assistant](screenshots/07-quick-setup-wizard.png) | ![Agent Readiness](screenshots/08-agent-readiness.png) |
 
 Chaque transaction d'un agent génère un **reçu de confiance** signé cryptographiquement — un enregistrement sur lequel toute altération se voit (JWS Ed25519, aligné sur les concepts probatoires d'eIDAS / eSIGN, sans horodatage qualifié) répertorié sous **My Sales → AI Sales**. Les clés de signature et un journal d'audit complet sont disponibles dans le même menu **My Sales**, et l'écran **Trust Center** affiche le score de confiance global de votre boutique.
 

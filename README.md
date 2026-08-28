@@ -10,6 +10,7 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 - **Agent blocking**: block potentially dangerous or problematic agents.
 - **Digital currencies**: enables purchases in digital currencies thanks to the X402 protocol.
 - **Peer-to-peer transactions**: enables direct peer-to-peer commerce between agents and merchants.
+- **Agent readiness dashboard**: a live check of whether AI agents can actually buy in your store today — three independent views (what others say, what you promise vs. what you do, what we've observed), so nothing is scored until it's actually verified.
 
 ## Screenshots
 
@@ -21,9 +22,9 @@ Enable new online shoppers, AI agents, to make purchases in your store securely 
 |-------------------|---------------------|----------|
 | ![Keys](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Settings](screenshots/06-settings.png) |
 
-| Quick Setup Wizard |
-|----------------------|
-| ![Quick Setup Wizard](screenshots/07-quick-setup-wizard.png) |
+| Quick Setup Wizard | Agent Readiness |
+|----------------------|------------------|
+| ![Quick Setup Wizard](screenshots/07-quick-setup-wizard.png) | ![Agent Readiness](screenshots/08-agent-readiness.png) |
 
 Every agent transaction produces a cryptographically signed **trust receipt** — a tamper-evident record (JWS Ed25519, aligned with eIDAS / eSIGN evidentiary concepts, without a qualified timestamp) listed under **My Sales → AI Sales**. Signing keys and a full audit log are available under the same **My Sales** menu, and the **Trust Center** screen surfaces your store's overall trust score.
 

@@ -10,6 +10,7 @@ Ermöglichen Sie neuen Online-Käufern, den KI-Agenten, sichere und zuverlässig
 - **Agentensperrung**: Blockieren Sie potenziell gefährliche oder problematische Agenten.
 - **Digitale Währungen**: Ermöglicht Käufe in digitalen Währungen dank des X402-Protokolls.
 - **Peer-to-Peer-Transaktionen**: Ermöglicht direkten Handel zwischen Agenten und Händlern.
+- **Agent-Readiness-Dashboard**: prüft live, ob KI-Agenten heute wirklich in Ihrem Shop einkaufen können — drei unabhängige Ansichten (was andere sagen, was Sie versprechen vs. was Sie tun, was wir beobachtet haben), ohne sie zu einem erfundenen Gesamtwert zu verschmelzen.
 
 ## Screenshots
 
@@ -21,9 +22,9 @@ Ermöglichen Sie neuen Online-Käufern, den KI-Agenten, sichere und zuverlässig
 |---------------------------|----------------------|----------------|
 | ![Schlüssel](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Einstellungen](screenshots/06-settings.png) |
 
-| Schnelleinrichtungs-Assistent |
-|--------------------------------------|
-| ![Assistent](screenshots/07-quick-setup-wizard.png) |
+| Schnelleinrichtungs-Assistent | Agent Readiness |
+|--------------------------------------|------------------|
+| ![Assistent](screenshots/07-quick-setup-wizard.png) | ![Agent Readiness](screenshots/08-agent-readiness.png) |
 
 Jede Agenten-Transaktion erzeugt einen kryptografisch signierten **Trust Receipt** — einen Nachweis, an dem jede Veränderung sichtbar wird (JWS Ed25519, an den Beweiskonzepten von eIDAS / eSIGN ausgerichtet, ohne qualifizierten Zeitstempel), gelistet unter **My Sales → AI Sales**. Signierschlüssel und ein vollständiges Audit-Protokoll stehen im selben **My Sales**-Menü zur Verfügung, und der Bildschirm **Trust Center** zeigt den Gesamt-Vertrauenswert Ihres Shops.
 
