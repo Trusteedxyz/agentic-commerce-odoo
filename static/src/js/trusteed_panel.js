@@ -27,6 +27,7 @@ import {
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { rpc } from "@web/core/network/rpc";
+import { user } from "@web/core/user";
 
 // Duration (ms) the "switching company" toast remains visible.
 const TOAST_DURATION_MS = 3000;
@@ -126,6 +127,32 @@ class TrusteedPanel extends Component {
     return this.props?.action?.context?.trusteed_section ?? "trust-center";
   }
 
+  /**
+   * Idioma del USUARIO de Odoo, para que la SPA no caiga al del navegador.
+   *
+   * WooCommerce, PrestaShop y Magento ya se lo pasan cada uno a su manera y
+   * Odoo era el único que no: la SPA acababa detectando `navigator.language`,
+   * así que un panel en castellano con el navegador en inglés salía en inglés
+   * —carcasa y diagnóstico, porque este valor viaja además al parámetro
+   * `lang=` de la API.
+   *
+   * `user.lang` (`@web/core/user`, Odoo 17.2+) ya viene en forma BCP-47
+   * ("es_ES" → "es-ES", vía `pyToJsLocale`); `user.context.lang` es la forma
+   * Python cruda y sirve de respaldo. `mount()` normaliza las dos.
+   *
+   * OJO: NO vale leer `session.user_context.lang` de `@web/session`.
+   * `@web/core/user` BORRA `user_context` de la sesión al construirse
+   * (`_makeUser` en `web/static/src/core/user.js`, Odoo 18) para dejar una
+   * única fuente de verdad — verificado contra la imagen `odoo:18.0`.
+   */
+  _resolveLocale() {
+    try {
+      return user?.lang ?? user?.context?.lang ?? undefined;
+    } catch (_err) {
+      return undefined;
+    }
+  }
+
   async _mountSpa() {
     const rootEl = this.rootRef.el?.querySelector("#amcp-root");
     if (!rootEl || !window.TrusteedEmbed?.mount) return;
@@ -138,6 +165,9 @@ class TrusteedPanel extends Component {
       section: this._resolveSection(),
       source: "odoo-embed",
       getToken,
+      // Sin esto la SPA cae a `navigator.language`: el idioma del navegador,
+      // no el del panel. Ver `_resolveLocale`.
+      locale: this._resolveLocale(),
       // Without this the bundle falls back to its built-in default
       // (production api.trusteed.xyz) — verified empirically 2026-07-23,
       // mirrors how the WooCommerce/PrestaShop loaders pass their own
