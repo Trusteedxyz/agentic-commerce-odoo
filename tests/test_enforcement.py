@@ -330,6 +330,110 @@ class TestVerifyAgentToken:
         assert result is None
 
 
+class TestVerifyAgentTokenMalformedInput:
+    """GHSA-2j2x-5q52-g48m companion hardening (D2).
+
+    Same defect *class* as the PrestaShop/WordPress report, different shape:
+    a syntactically valid JWS whose header/payload decode to the wrong JSON
+    TYPE (not the wrong signature) raised AttributeError/TypeError/ValueError
+    instead of returning None. The caller (sale_order_enforcement.py) treats
+    any exception here as *our* infrastructure failing and applies the
+    merchant's fallback mode — the same fail-open class reached a different
+    way. Every branch below must return None (an ordinary invalid token,
+    forcing R001), never raise.
+    """
+
+    def _resolver(self) -> dict:
+        return {_AGENT_DID: {"x": _AGENT_PUB_B64URL}}
+
+    def _valid_payload(self, **overrides) -> dict:
+        now = int(time.time())
+        payload = {
+            "iss": _AGENT_DID,
+            "aud": "trusteed",
+            "merchantId": _MERCHANT_ID,
+            "checkoutIntentHash": "malformed-input-test-hash",
+            "nonce": "nonce-malformed-input-001",
+            "iat": now,
+            "exp": now + 300,
+            "jti": "fixturejti0123456789",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_header_decodes_to_a_list_returns_none(self):
+        """A JWS whose header segment decodes to a JSON array, not an object."""
+        header_b64 = base64url_encode(json.dumps([]).encode())
+        payload_b64 = base64url_encode(json.dumps(self._valid_payload()).encode())
+        sig_b64 = base64url_encode(b"\x00" * 64)
+        jws = f"{header_b64}.{payload_b64}.{sig_b64}"
+
+        result = verify_agent_token(jws, "malformed-input-test-hash", _MERCHANT_ID, self._resolver())
+
+        assert result is None
+
+    def test_payload_decodes_to_a_scalar_returns_none(self):
+        """A JWS whose payload segment decodes to a bare number, not an object.
+
+        Signed for real (not a dummy signature) — a scalar payload only
+        exercises the `payload.get(...)` calls in Step 5+ if the token first
+        clears Step 4's real Ed25519 verification.
+        """
+        header = {"alg": "EdDSA", "typ": "trusteed-agent-token+jwt", "kid": _AGENT_KID}
+        header_b64 = base64url_encode(json.dumps(header).encode())
+        payload_b64 = base64url_encode(json.dumps(123).encode())
+        sig = _AGENT_SK.sign(f"{header_b64}.{payload_b64}".encode("ascii"))
+        jws = f"{header_b64}.{payload_b64}.{base64url_encode(sig)}"
+
+        result = verify_agent_token(jws, "x", _MERCHANT_ID, self._resolver())
+
+        assert result is None
+
+    def test_kid_non_string_returns_none(self):
+        """A JWS whose header `kid` claim is a number instead of a string."""
+        header = {"alg": "EdDSA", "typ": "trusteed-agent-token+jwt", "kid": 12345}
+        header_b64 = base64url_encode(json.dumps(header).encode())
+        payload_b64 = base64url_encode(json.dumps(self._valid_payload()).encode())
+        sig_b64 = base64url_encode(b"\x00" * 64)
+        jws = f"{header_b64}.{payload_b64}.{sig_b64}"
+
+        result = verify_agent_token(jws, "malformed-input-test-hash", _MERCHANT_ID, self._resolver())
+
+        assert result is None
+
+    def test_resolver_entry_not_a_dict_returns_none(self):
+        """agent_did_resolver[agent_did] is caller-supplied and may not be a dict."""
+        intent_hash = compute_intent_hash('{"amount":1}')
+        jws = _make_agent_token_jws(
+            checkout_intent_hash=intent_hash,
+            nonce="nonce-resolver-shape-001",
+        )
+
+        result = verify_agent_token(jws, intent_hash, _MERCHANT_ID, {_AGENT_DID: "not-a-dict"})
+
+        assert result is None
+
+    def test_exp_non_numeric_returns_none(self):
+        """A real, validly-signed token whose `exp` claim is a non-numeric string."""
+        header = {"alg": "EdDSA", "typ": "trusteed-agent-token+jwt", "kid": _AGENT_KID}
+        payload = self._valid_payload(exp="not-a-number")
+        jws = _sign_jws(payload, _AGENT_SK, header)
+
+        result = verify_agent_token(jws, payload["checkoutIntentHash"], _MERCHANT_ID, self._resolver())
+
+        assert result is None
+
+    def test_nonce_non_string_returns_none(self):
+        """A real, validly-signed token whose `nonce` claim is a number, not a string."""
+        header = {"alg": "EdDSA", "typ": "trusteed-agent-token+jwt", "kid": _AGENT_KID}
+        payload = self._valid_payload(nonce=12345)
+        jws = _sign_jws(payload, _AGENT_SK, header)
+
+        result = verify_agent_token(jws, payload["checkoutIntentHash"], _MERCHANT_ID, self._resolver())
+
+        assert result is None
+
+
 # ---------------------------------------------------------------------------
 # Tests — pull_snapshot (network mocked)
 # ---------------------------------------------------------------------------

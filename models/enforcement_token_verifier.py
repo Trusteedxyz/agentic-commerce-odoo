@@ -88,6 +88,19 @@ def verify_agent_token(
         _logger.debug("CEL token verify: header/payload decode failed")
         return None
 
+    # GHSA-2j2x-5q52-g48m companion hardening (D2): json.loads() above only
+    # guarantees VALID JSON, not an object. A syntactically valid JWS whose
+    # header/payload decode to a JSON array or a bare scalar (attacker
+    # controls both — no signature check has run yet) made the .get() calls
+    # below raise AttributeError instead of this function returning None.
+    # The caller (sale_order_enforcement.py) treats any exception here as
+    # *our* code breaking and applies the merchant's most lenient configured
+    # fallback mode — the same fail-open class as a malformed signature,
+    # reached a different way.
+    if not isinstance(header, dict) or not isinstance(payload, dict):
+        _logger.debug("CEL token verify: header/payload is not a JSON object")
+        return None
+
     # Step 2 — Header claim checks
     if header.get("alg") != "EdDSA":
         _logger.debug("CEL token verify: unexpected alg=%s", header.get("alg"))
@@ -95,7 +108,10 @@ def verify_agent_token(
     if header.get("typ") != "trusteed-agent-token+jwt":
         _logger.debug("CEL token verify: unexpected typ=%s", header.get("typ"))
         return None
-    kid: str = header.get("kid", "")
+    kid = header.get("kid", "")
+    if not isinstance(kid, str):
+        _logger.debug("CEL token verify: kid claim is not a string")
+        return None
     agent_did = kid.split("#")[0] if "#" in kid else kid
     if not agent_did:
         _logger.debug("CEL token verify: empty kid/agent_did")
@@ -103,7 +119,7 @@ def verify_agent_token(
 
     # Step 3 — Key resolution
     jwk = agent_did_resolver.get(agent_did)
-    if not jwk or not jwk.get("x"):
+    if not isinstance(jwk, dict) or not jwk.get("x"):
         _logger.debug("CEL token verify: agent DID %s not in resolver", agent_did)
         return None
     try:
@@ -138,8 +154,18 @@ def verify_agent_token(
                       payload.get("merchantId"), merchant_id)
         return None
     now = time.time()
-    exp: float = float(payload.get("exp", 0))
-    iat: float = float(payload.get("iat", 0))
+    exp_raw = payload.get("exp", 0)
+    iat_raw = payload.get("iat", 0)
+    # bool is an int subclass in Python — exclude it explicitly so a stray
+    # `"exp": true` isn't silently coerced to 1.
+    if isinstance(exp_raw, bool) or not isinstance(exp_raw, (int, float)):
+        _logger.debug("CEL token verify: exp claim is not numeric")
+        return None
+    if isinstance(iat_raw, bool) or not isinstance(iat_raw, (int, float)):
+        _logger.debug("CEL token verify: iat claim is not numeric")
+        return None
+    exp: float = float(exp_raw)
+    iat: float = float(iat_raw)
     if exp + _EXP_CLOCK_SKEW_SECONDS < now:
         _logger.debug("CEL token verify: token expired (exp=%s, now=%s)", exp, now)
         return None
@@ -160,7 +186,10 @@ def verify_agent_token(
     # ya lo rechazaba fuera de rango. Aquí la deduplicación colgaba de `if
     # nonce:`, así que un token que simplemente OMITÍA el claim se saltaba
     # entera la detección de replay offline. Fail-closed, igual que WC/PS.
-    nonce: str = payload.get("nonce", "")
+    nonce = payload.get("nonce", "")
+    if not isinstance(nonce, str):
+        _logger.debug("CEL token verify: nonce claim is not a string")
+        return None
     if not 16 <= len(nonce) <= 64:
         _logger.debug(
             "CEL token verify: nonce missing or out of range (len=%d)", len(nonce)
