@@ -212,6 +212,10 @@ genau die Selbsttäuschung, die diese Seite aufdecken soll.
 
 ## Änderungsprotokoll
 
+### 18.0.1.2.4 — Sicherheitshärtung
+
+- Gehärtet: Die Verifizierung des Agent-Tokens weist unerwartet geformte Eingaben jetzt sauber zurück, statt einen internen Fehler zu riskieren. Kein ausnutzbarer Fehler hier — anders als bei anderen Plattformen dieser Familie lässt hier kein Pfad eine Bestellung wegen dieses Fehlers durch — aus Konsistenzgründen gehärtet nach einem Sicherheitshinweis zum PrestaShop-Modul. Siehe [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
+
 ### 18.0.1.2.3
 
 - Neu: wenn eine Prüfung nicht durchgeführt werden konnte, erklärt das Panel jetzt, was sie freischalten würde — nichts zu tun, Einrichtung nötig, Daten stehen noch aus, oder eine unserer eigenen Prüfungen ist fehlgeschlagen — statt einer unerklärten grauen Liste.

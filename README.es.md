@@ -211,6 +211,10 @@ esta página existe para cazar.
 
 ## Historial de cambios
 
+### 18.0.1.2.4 — Refuerzo de seguridad
+
+- Endurecido: la verificación del token del agente ahora rechaza de forma limpia cualquier entrada con forma inesperada, en vez de arriesgarse a un error interno. No es un fallo explotable aquí — a diferencia de otras plataformas de esta familia, ningún camino deja pasar un pedido por ese error — endurecido por consistencia tras un aviso de seguridad contra el módulo de PrestaShop. Ver [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
+
 ### 18.0.1.2.3
 
 - Nuevo: cuando una comprobación no se pudo ejecutar, el panel ahora explica qué la desbloquearía — nada que hacer, hay que configurar algo, falta esperar datos, o ha fallado una comprobación nuestra — en vez de una lista plana de grises sin explicar.

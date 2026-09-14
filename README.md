@@ -211,6 +211,10 @@ exists to catch.
 
 ## Changelog
 
+### 18.0.1.2.4 — Security hardening
+
+- Hardened: the agent-token verification now rejects any unexpectedly-shaped input cleanly instead of risking an internal error. Not an exploitable bug here — unlike other platforms in this family, no path here lets an order through because of that error — hardened for consistency after a security report against the PrestaShop module. See [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
+
 ### 18.0.1.2.3
 
 - New: a check that could not run now says why in one of four groups — nothing to do, needs configuration, waiting for data, or one of our own checks failed — instead of one flat list of unexplained grays.

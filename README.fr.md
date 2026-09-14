@@ -211,6 +211,10 @@ que cette page existe pour débusquer.
 
 ## Journal des modifications
 
+### 18.0.1.2.4 — Renforcement de sécurité
+
+- Renforcé : la vérification du jeton d'agent rejette désormais proprement toute entrée à la forme inattendue, au lieu de risquer une erreur interne. Ce n'est pas une faille exploitable ici — contrairement à d'autres plateformes de cette famille, aucun chemin ne laisse passer une commande à cause de cette erreur — renforcé par cohérence après un signalement de sécurité concernant le module PrestaShop. Voir [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
+
 ### 18.0.1.2.3
 
 - Nouveau : lorsqu'une vérification n'a pas pu s'exécuter, le panneau explique désormais ce qui la débloquerait — rien à faire, configuration nécessaire, en attente de données, ou l'une de nos propres vérifications a échoué — au lieu d'une liste plate de gris inexpliqués.
