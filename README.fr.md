@@ -14,11 +14,11 @@ Les agents IA sont un nouveau type d'acheteur en ligne. Avec Trusteed, le résea
 
 ## Captures d'écran
 
-| Trust Center | My Sales — Mes commandes | My Sales — AI Sales |
+| Trust Center | My Sales → Mes commandes | My Sales → AI Sales |
 |---------------|-----------------------------|--------------------------|
 | ![Trust Center](screenshots/01-trust-center.png) | ![Mes commandes](screenshots/02-my-sales-orders.png) | ![AI Sales](screenshots/03-my-sales-ai-sales.png) |
 
-| My Sales — Clés | My Sales — Audit | Paramètres |
+| My Sales → Clés | My Sales → Audit | Paramètres |
 |---------------------|----------------------|------------|
 | ![Clés](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Paramètres](screenshots/06-settings.png) |
 
@@ -47,11 +47,11 @@ Les cinq outils sont enregistrés à l'installation, mais un seul est à la fois
 
 | Outil | Par défaut | État aujourd'hui |
 |-------|------------|------------------|
-| `verify-agent-signature` | activé | **Opérationnel** — vérification de signature RFC 9421 |
+| `verify-agent-signature` | activé | **Opérationnel**: vérification de signature RFC 9421 |
 | `dispatch-payment-acp` | **désactivé** | Fonctionne, mais en opt-in : paiement initié par l'agent, c'est vous qui l'activez |
 | `dispatch-payment-x402` | **désactivé** | Fonctionne, mais en opt-in : paiement initié par l'agent, c'est vous qui l'activez |
-| `sign-trust-receipt` | activé | **Aucun backend déployé pour l'instant** — se déclare toujours indisponible, quoi que dise la bascule. Les reçus sont toujours émis par le parcours de paiement et se lisent sous **My Sales → AI Sales** |
-| `dispatch-payment-ap2` | **désactivé** | **Aucun backend déployé pour l'instant** — se déclare toujours indisponible, quoi que dise la bascule |
+| `sign-trust-receipt` | activé | **Aucun backend déployé pour l'instant**: se déclare toujours indisponible, quoi que dise la bascule. Les reçus sont toujours émis par le parcours de paiement et se lisent sous **My Sales → AI Sales** |
+| `dispatch-payment-ap2` | **désactivé** | **Aucun backend déployé pour l'instant**: se déclare toujours indisponible, quoi que dise la bascule |
 
 Activer une bascule ne rend jamais appelable un outil dépourvu de backend déployé. La bascule ne fait que mémoriser votre préférence pour le jour où ce backend arrivera.
 
@@ -63,7 +63,7 @@ Activer une bascule ne rend jamais appelable un outil dépourvu de backend dépl
 |-----------|------------|
 | Odoo | 18.0 (Community ou Enterprise) |
 | Python | 3.10+ |
-| Déploiement | Odoo.sh ou installation on-premise — **non** disponible sur Odoo Online (SaaS), qui bloque les modules tiers personnalisés |
+| Déploiement | Odoo.sh ou installation on-premise; **non** disponible sur Odoo Online (SaaS), qui bloque les modules tiers personnalisés |
 
 ## Prérequis
 
@@ -128,7 +128,7 @@ Après l'installation, un menu de premier niveau **Trusteed** apparaît dans le 
 |------|--------------|
 | Quick Setup | Assistant d'intégration en 4 étapes |
 | Trust Center | Aperçu du score de confiance de la boutique |
-| My Sales | Mes commandes, AI Sales, Clés, Audit — tout au même endroit |
+| My Sales | Mes commandes, AI Sales, Clés et Audit au même endroit |
 | Paramètres | Merchant ID, Bootstrap Secret, URL de base de l'API et bascules par outil |
 
 Le panneau d'administration est un bundle partagé avec les connecteurs WooCommerce et PrestaShop. Il contient donc aussi des sections que l'hôte Odoo n'expose pas : `inicio`, `mis-reglas`, `seguridad`, `agentes`, `payment-methods` et `merchant-center`. Les actions client d'Odoo ne montent que `trust-center` et `mis-ventas`, et rien dans ces deux pages ne renvoie vers les autres. Dans Odoo, ces sections sont inaccessibles, et le tableau ci-dessus est la liste complète de ce que vous pouvez ouvrir depuis le Back Office.
@@ -212,7 +212,7 @@ que cette page existe pour débusquer.
 
 ## Journal des modifications
 
-### 18.0.1.2.4 — Renforcement de sécurité
+### 18.0.1.2.4: Renforcement de sécurité
 
 - Renforcé : la vérification du token d'agent rejette désormais proprement toute entrée à la forme inattendue, au lieu de risquer une erreur interne. Ce n'est pas un bug exploitable ici : contrairement à d'autres plateformes de cette famille, aucun chemin ne laisse passer une commande à cause de cette erreur. Renforcé par cohérence après un signalement de sécurité sur le module PrestaShop. Voir [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
 

@@ -96,14 +96,14 @@ The three payment rails default to **OFF** (opt-in); `verify-agent-signature` de
 docker exec odoo-staging odoo shell -d odoo --no-http <<'PY'
 from odoo.exceptions import UserError
 
-# PLANNED tool — must raise, never return a receipt
+# PLANNED tool: must raise, never return a receipt
 try:
     env['trusteed.ai.tool'].run_sign_trust_receipt('12345')
     print("FAIL: expected UserError")
 except UserError as e:
     print(f"OK (planned, unavailable): {e}")
 
-# Disabled-by-default payment rail — must raise until the merchant opts in.
+# Disabled-by-default payment rail: must raise until the merchant opts in.
 # The availability/toggle gate runs before argument validation, so placeholder
 # args are enough to exercise it.
 try:
@@ -200,10 +200,10 @@ If you used a throwaway local stack, tear down its volumes instead.
 
 | Symptom                                       | Fix                                                                                |
 | --------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 0 actions found                               | `--init=trusteed` did not load the addon — re-run with `-u trusteed`               |
+| 0 actions found                               | `--init=trusteed` did not load the addon. Re-run with `-u trusteed`               |
 | `KeyError: 'trusteed.bootstrap_secret'`       | Re-apply the system parameters from section 2                                       |
-| `sign-trust-receipt` returns instead of raising | The availability gate is bypassed — check `PLANNED_TOOL_IDS` in `utils/tool_toggles.py` |
-| Payment rail raises "is disabled"              | Expected until the merchant opts in — **Settings → General Settings → Trusteed**    |
+| `sign-trust-receipt` returns instead of raising | The availability gate is bypassed. Check `PLANNED_TOOL_IDS` in `utils/tool_toggles.py` |
+| Payment rail raises "is disabled"              | Expected until the merchant opts in (**Settings → General Settings → Trusteed**)    |
 | No `.jose` attachment                          | No receipt exists upstream for that order, or `trusteed.api_base` is unreachable from the container (`curl` it from inside) |
 
 ---

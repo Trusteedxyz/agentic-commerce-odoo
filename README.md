@@ -14,11 +14,11 @@ AI agents are a new kind of online shopper. With Trusteed, the network that conn
 
 ## Screenshots
 
-| Trust Center | My Sales — My Orders | My Sales — AI Sales |
+| Trust Center | My Sales → My Orders | My Sales → AI Sales |
 |---------------|-----------------------|----------------------|
 | ![Trust Center](screenshots/01-trust-center.png) | ![My Orders](screenshots/02-my-sales-orders.png) | ![AI Sales](screenshots/03-my-sales-ai-sales.png) |
 
-| My Sales — Keys | My Sales — Audit | Settings |
+| My Sales → Keys | My Sales → Audit | Settings |
 |-------------------|---------------------|----------|
 | ![Keys](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Settings](screenshots/06-settings.png) |
 
@@ -47,11 +47,11 @@ All five tools are registered on install, but only one of them is both enabled b
 
 | Tool | Default | Status today |
 |------|---------|--------------|
-| `verify-agent-signature` | on | **Operational** — RFC 9421 signature verification |
+| `verify-agent-signature` | on | **Operational**: RFC 9421 signature verification |
 | `dispatch-payment-acp` | **off** | Works, but opt-in: agent-initiated payment, you enable it yourself |
 | `dispatch-payment-x402` | **off** | Works, but opt-in: agent-initiated payment, you enable it yourself |
-| `sign-trust-receipt` | on | **No backend deployed yet** — always reports unavailable, whatever the toggle says. Receipts are still issued by the checkout pipeline and readable under **My Sales → AI Sales** |
-| `dispatch-payment-ap2` | **off** | **No backend deployed yet** — always reports unavailable, whatever the toggle says |
+| `sign-trust-receipt` | on | **No backend deployed yet**: always reports unavailable, whatever the toggle says. Receipts are still issued by the checkout pipeline and readable under **My Sales → AI Sales** |
+| `dispatch-payment-ap2` | **off** | **No backend deployed yet**: always reports unavailable, whatever the toggle says |
 
 Turning a toggle on never makes a tool with no deployed backend invocable. The toggle only preserves your preference for when that backend ships.
 
@@ -63,7 +63,7 @@ Turning a toggle on never makes a tool with no deployed backend invocable. The t
 |-----------|-----------|
 | Odoo | 18.0 (Community or Enterprise) |
 | Python | 3.10+ |
-| Deployment | Odoo.sh or on-premise — **not** available on Odoo Online (SaaS), which blocks custom third-party modules |
+| Deployment | Odoo.sh or on-premise; **not** available on Odoo Online (SaaS), which blocks custom third-party modules |
 
 ## Requirements
 
@@ -128,7 +128,7 @@ After installation, a **Trusteed** top-level menu appears in the Odoo Back Offic
 |------|--------------|
 | Quick Setup | 4-step onboarding wizard |
 | Trust Center | Store trust score overview |
-| My Sales | My Orders, AI Sales, Keys, Audit — all in one place |
+| My Sales | My Orders, AI Sales, Keys and Audit in one place |
 | Settings | Merchant ID, Bootstrap Secret, API base URL, and per-tool toggles |
 
 The admin panel is a bundle shared with the WooCommerce and PrestaShop connectors, so it also contains sections the Odoo host does not expose: `inicio`, `mis-reglas`, `seguridad`, `agentes`, `payment-methods` and `merchant-center`. The Odoo client actions mount only `trust-center` and `mis-ventas`, and nothing inside those two pages links to the others. In Odoo those sections are unreachable, and the table above is the full list of what you can open from the Back Office.
@@ -211,7 +211,7 @@ exists to catch.
 
 ## Changelog
 
-### 18.0.1.2.4 — Security hardening
+### 18.0.1.2.4: Security hardening
 
 - Hardened: the agent-token verification now rejects any unexpectedly-shaped input cleanly instead of risking an internal error. Not an exploitable bug here: unlike other platforms in this family, no path here lets an order through because of that error. Hardened for consistency after a security report against the PrestaShop module. See [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
 

@@ -14,11 +14,11 @@ KI-Agenten sind eine neue Art von Online-Käufern. Mit Trusteed, dem Netzwerk, d
 
 ## Screenshots
 
-| Trust Center | My Sales — Meine Bestellungen | My Sales — AI Sales |
+| Trust Center | My Sales → Meine Bestellungen | My Sales → AI Sales |
 |---------------|-----------------------------------|--------------------------|
 | ![Trust Center](screenshots/01-trust-center.png) | ![Meine Bestellungen](screenshots/02-my-sales-orders.png) | ![AI Sales](screenshots/03-my-sales-ai-sales.png) |
 
-| My Sales — Schlüssel | My Sales — Audit | Einstellungen |
+| My Sales → Schlüssel | My Sales → Audit | Einstellungen |
 |---------------------------|----------------------|----------------|
 | ![Schlüssel](screenshots/04-my-sales-keys.png) | ![Audit](screenshots/05-my-sales-audit.png) | ![Einstellungen](screenshots/06-settings.png) |
 
@@ -47,11 +47,11 @@ Alle fünf Tools werden bei der Installation registriert, aber nur eines ist sta
 
 | Tool | Standard | Status heute |
 |------|----------|--------------|
-| `verify-agent-signature` | aktiviert | **Einsatzbereit** — Signaturprüfung nach RFC 9421 |
+| `verify-agent-signature` | aktiviert | **Einsatzbereit**: Signaturprüfung nach RFC 9421 |
 | `dispatch-payment-acp` | **deaktiviert** | Funktioniert, ist aber Opt-in: agenteninitiierte Zahlung, Sie aktivieren sie selbst |
 | `dispatch-payment-x402` | **deaktiviert** | Funktioniert, ist aber Opt-in: agenteninitiierte Zahlung, Sie aktivieren sie selbst |
-| `sign-trust-receipt` | aktiviert | **Noch kein Backend bereitgestellt** — meldet sich immer als nicht verfügbar, egal, was der Schalter sagt. Belege stellt weiterhin der Checkout-Ablauf aus, und Sie können sie unter **My Sales → AI Sales** lesen |
-| `dispatch-payment-ap2` | **deaktiviert** | **Noch kein Backend bereitgestellt** — meldet sich immer als nicht verfügbar, egal, was der Schalter sagt |
+| `sign-trust-receipt` | aktiviert | **Noch kein Backend bereitgestellt**: meldet sich immer als nicht verfügbar, egal, was der Schalter sagt. Belege stellt weiterhin der Checkout-Ablauf aus, und Sie können sie unter **My Sales → AI Sales** lesen |
+| `dispatch-payment-ap2` | **deaktiviert** | **Noch kein Backend bereitgestellt**: meldet sich immer als nicht verfügbar, egal, was der Schalter sagt |
 
 Wenn Sie einen Schalter einschalten, wird ein Tool ohne bereitgestelltes Backend dadurch nie aufrufbar. Der Schalter merkt sich nur Ihre Einstellung für den Zeitpunkt, an dem dieses Backend erscheint.
 
@@ -63,7 +63,7 @@ Wenn Sie einen Schalter einschalten, wird ein Tool ohne bereitgestelltes Backend
 |------------|-------------|
 | Odoo | 18.0 (Community oder Enterprise) |
 | Python | 3.10+ |
-| Bereitstellung | Odoo.sh oder On-Premise-Installation — **nicht** verfügbar bei Odoo Online (SaaS), das benutzerdefinierte Drittanbieter-Module blockiert |
+| Bereitstellung | Odoo.sh oder On-Premise-Installation; **nicht** verfügbar bei Odoo Online (SaaS), das benutzerdefinierte Drittanbieter-Module blockiert |
 
 ## Voraussetzungen
 
@@ -128,7 +128,7 @@ Nach der Installation erscheint im Odoo-Back-Office ein Menü **Trusteed** auf o
 |------|--------------|
 | Quick Setup | Onboarding-Assistent in 4 Schritten |
 | Trust Center | Überblick über den Vertrauenswert des Shops |
-| My Sales | Meine Bestellungen, AI Sales, Schlüssel, Audit — alles an einem Ort |
+| My Sales | Meine Bestellungen, AI Sales, Schlüssel und Audit an einem Ort |
 | Einstellungen | Merchant ID, Bootstrap Secret, API-Basis-URL und Schalter je Tool |
 
 Das Admin-Panel ist ein Bundle, das mit den Konnektoren für WooCommerce und PrestaShop geteilt wird. Deshalb enthält es auch Bereiche, die der Odoo-Host nicht bereitstellt: `inicio`, `mis-reglas`, `seguridad`, `agentes`, `payment-methods` und `merchant-center`. Die Odoo-Client-Aktionen laden nur `trust-center` und `mis-ventas`, und innerhalb dieser beiden Seiten verweist nichts auf die übrigen. In Odoo sind diese Bereiche nicht erreichbar, und die Tabelle oben ist die vollständige Liste dessen, was Sie aus dem Back-Office öffnen können.
@@ -214,7 +214,7 @@ wäre genau die Selbsttäuschung, die diese Seite aufdecken soll.
 
 ## Änderungsprotokoll
 
-### 18.0.1.2.4 — Sicherheitshärtung
+### 18.0.1.2.4: Sicherheitshärtung
 
 - Gehärtet: Die Verifizierung des Agenten-Tokens weist jetzt jede unerwartet geformte Eingabe sauber zurück, statt einen internen Fehler zu riskieren. Hier ist das kein ausnutzbarer Fehler: Anders als bei anderen Plattformen dieser Familie lässt hier kein Pfad wegen dieses Fehlers eine Bestellung durch. Aus Konsistenzgründen gehärtet, nach einer Sicherheitsmeldung zum PrestaShop-Modul. Siehe [GHSA-2j2x-5q52-g48m](https://github.com/Trusteedxyz/agentic-commerce-prestashop/security/advisories/GHSA-2j2x-5q52-g48m).
 

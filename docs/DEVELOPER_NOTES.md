@@ -76,65 +76,65 @@ Principal functional pieces (test files and compiled assets abbreviated):
 
 ```
 trusteed/
-├── __manifest__.py                    — Version 18.0.1.2.4 + dependencies
-├── hooks.py                           — pre_init_hook (SaaS detection blocks install),
+├── __manifest__.py                    # Version 18.0.1.2.4 + dependencies
+├── hooks.py                           # pre_init_hook (SaaS detection blocks install),
 │                                        post_init_hook (ai_schema rows, toggle seeding,
 │                                        capability report)
 ├── controllers/
-│   └── main.py                        — bootstrap broker: S2S relay call → opaque data-plane token
+│   └── main.py                        # bootstrap broker: S2S relay call → opaque data-plane token
 ├── models/
-│   ├── res_config_settings.py         — Trusteed Settings (password=True for the secret)
-│   ├── setup_wizard.py                — TransientModel 4-step onboarding wizard
-│   ├── api_client.py                  — TrusteedApiClient (SSRF guards, allow_redirects=False)
-│   ├── ai_tool_invocation.py          — trusteed.ai.tool: run_* methods for the 5 AI tools
-│   ├── ir_actions_server_ai_tool.py   — ir.actions.server extension for ai_tool usage
-│   ├── account_move_jws.py            — account.move hook → JWS receipt ir.attachment on post
-│   ├── account_move_refund_proxy.py   — refund projection for enforcement signals
-│   ├── sale_order_trust.py            — sale.order computed trust score fields (kanban badge)
-│   ├── sale_order_enforcement.py      — checkout enforcement hooks on create/write/confirm
-│   ├── enforcement_snapshot.py        — signed rule snapshot fetch + cache
-│   ├── enforcement_token_verifier.py  — agent token verification (Ed25519, nonce mandatory)
-│   ├── enforcement_company_map.py     — company → merchant resolution for enforcement
-│   ├── offline_safety_valve_evaluator.py — local evaluation of the universal rule set
-│   ├── nonce_consumer.py              — offline replay detection (nonce consumption)
-│   ├── capabilities_reporter.py       — reports projectable cart signals to the backend
-│   └── stock_picking_fulfillment.py   — fulfillment signal projection
+│   ├── res_config_settings.py         # Trusteed Settings (password=True for the secret)
+│   ├── setup_wizard.py                # TransientModel 4-step onboarding wizard
+│   ├── api_client.py                  # TrusteedApiClient (SSRF guards, allow_redirects=False)
+│   ├── ai_tool_invocation.py          # trusteed.ai.tool: run_* methods for the 5 AI tools
+│   ├── ir_actions_server_ai_tool.py   # ir.actions.server extension for ai_tool usage
+│   ├── account_move_jws.py            # account.move hook → JWS receipt ir.attachment on post
+│   ├── account_move_refund_proxy.py   # refund projection for enforcement signals
+│   ├── sale_order_trust.py            # sale.order computed trust score fields (kanban badge)
+│   ├── sale_order_enforcement.py      # checkout enforcement hooks on create/write/confirm
+│   ├── enforcement_snapshot.py        # signed rule snapshot fetch + cache
+│   ├── enforcement_token_verifier.py  # agent token verification (Ed25519, nonce mandatory)
+│   ├── enforcement_company_map.py     # company → merchant resolution for enforcement
+│   ├── offline_safety_valve_evaluator.py # local evaluation of the universal rule set
+│   ├── nonce_consumer.py              # offline replay detection (nonce consumption)
+│   ├── capabilities_reporter.py       # reports projectable cart signals to the backend
+│   └── stock_picking_fulfillment.py   # fulfillment signal projection
 ├── utils/
-│   ├── ssrf.py                        — SSRF validation (is_global + CGN/multicast blocklist)
-│   ├── saas_detector.py               — 3-signal Odoo SaaS detector (blocks install)
-│   ├── tool_toggles.py                — per-tool enable/disable + planned-tool honest gate
-│   ├── cart_signals.py                — cart signal extraction for enforcement
-│   ├── jcs.py                         — RFC 8785 JCS canonicalization
-│   ├── r043_hitl_gate.py              — human-in-the-loop gate helper
-│   └── agent_history_fetcher.py       — agent history lookup for window rules
+│   ├── ssrf.py                        # SSRF validation (is_global + CGN/multicast blocklist)
+│   ├── saas_detector.py               # 3-signal Odoo SaaS detector (blocks install)
+│   ├── tool_toggles.py                # per-tool enable/disable + planned-tool honest gate
+│   ├── cart_signals.py                # cart signal extraction for enforcement
+│   ├── jcs.py                         # RFC 8785 JCS canonicalization
+│   ├── r043_hitl_gate.py              # human-in-the-loop gate helper
+│   └── agent_history_fetcher.py       # agent history lookup for window rules
 ├── security/
-│   ├── groups.xml                     — group_user + group_admin (with implied_ids)
-│   └── ir.model.access.csv            — ACL
+│   ├── groups.xml                     # group_user + group_admin (with implied_ids)
+│   └── ir.model.access.csv            # ACL
 ├── views/
-│   ├── menu.xml                       — Trusteed top-level menu
-│   ├── client_action.xml              — OWL client action mount point
-│   ├── res_config_settings_views.xml  — Settings form
-│   ├── wizard.xml                     — 4-step wizard form (server action gated to group_admin)
-│   ├── sale_order_kanban.xml          — kanban trust score badge xpath inject
-│   └── sale_order_enforcement.xml     — hidden agent token field on the sale.order form
+│   ├── menu.xml                       # Trusteed top-level menu
+│   ├── client_action.xml              # OWL client action mount point
+│   ├── res_config_settings_views.xml  # Settings form
+│   ├── wizard.xml                     # 4-step wizard form (server action gated to group_admin)
+│   ├── sale_order_kanban.xml          # kanban trust score badge xpath inject
+│   └── sale_order_enforcement.xml     # hidden agent token field on the sale.order form
 ├── data/
-│   ├── system_parameters.xml          — Default ir.config_parameter values
-│   ├── ai_tools.xml                   — 5 ir.actions.server ai_tool records (noupdate="1")
-│   ├── cron.xml                       — enforcement snapshot refresh cron
-│   └── agentic-tools-catalog.json     — bundled canonical tool catalog
+│   ├── system_parameters.xml          # Default ir.config_parameter values
+│   ├── ai_tools.xml                   # 5 ir.actions.server ai_tool records (noupdate="1")
+│   ├── cron.xml                       # enforcement snapshot refresh cron
+│   └── agentic-tools-catalog.json     # bundled canonical tool catalog
 ├── static/src/
-│   ├── js/trusteed_panel.js           — OWL 2 component (mount + company switch detection)
-│   ├── js/admin-spa.js                — Bundled React SPA (build artifact, shared bundle)
-│   ├── css/trust_badge.css            — kanban badge styles (high/medium/low/none)
-│   └── xml/trusteed_panel.xml         — OWL template + toast template
+│   ├── js/trusteed_panel.js           # OWL 2 component (mount + company switch detection)
+│   ├── js/admin-spa.js                # Bundled React SPA (build artifact, shared bundle)
+│   ├── css/trust_badge.css            # kanban badge styles (high/medium/low/none)
+│   └── xml/trusteed_panel.xml         # OWL template + toast template
 ├── scripts/
-│   └── export_tool_schemas.py         — exports the AI tool argument schemas
-├── tests/                             — 22 test modules, e.g.
-│   ├── test_token_broker.py           — 13 tests (JWT signing, multi-company)
-│   ├── test_multi_company.py          — 7 tests (company switch, isolation)
-│   └── …                              — enforcement, AI tool invocation, JCS vectors,
+│   └── export_tool_schemas.py         # exports the AI tool argument schemas
+├── tests/                             # 22 test modules, e.g.
+│   ├── test_token_broker.py           # 13 tests (JWT signing, multi-company)
+│   ├── test_multi_company.py          # 7 tests (company switch, isolation)
+│   └── …                              # enforcement, AI tool invocation, JCS vectors,
 │                                        nonce replay, tool toggles, offline safety valve
-└── i18n/                              — .po files (en, es, fr, de, nl)
+└── i18n/                              # .po files (en, es, fr, de, nl)
 ```
 
 ## Security Notes
@@ -166,8 +166,8 @@ trusteed/
 
 | Odoo Version | Edition    | Status                                     |
 | ------------ | ---------- | ------------------------------------------ |
-| 18.0         | Community  | ✅ Supported — primary target              |
-| 18.0         | Enterprise | ✅ Supported — primary target              |
+| 18.0         | Community  | ✅ Supported (primary target)              |
+| 18.0         | Enterprise | ✅ Supported (primary target)              |
 | 17.0         | Community  | ✅ Supported (views use inline `invisible`) |
 | 17.0         | Enterprise | ✅ Supported (views use inline `invisible`) |
 | Odoo Online  | SaaS       | ❌ Cannot install custom modules            |
@@ -185,11 +185,11 @@ The addon exposes **5 AI-callable tools** via Odoo's `ir.actions.server` with `u
 
 | Tool name                         | Odoo xml_id                              | Invocable from Odoo?          | Toggle default |
 | --------------------------------- | ---------------------------------------- | ----------------------------- | -------------- |
-| `trusteed/sign-trust-receipt`     | `action_trusteed_sign_trust_receipt`     | ❌ no — backend `planned`      | ON (inert)     |
+| `trusteed/sign-trust-receipt`     | `action_trusteed_sign_trust_receipt`     | ❌ no (backend `planned`)      | ON (inert)     |
 | `trusteed/verify-agent-signature` | `action_trusteed_verify_agent_signature` | ✅ yes                        | ON             |
-| `trusteed/dispatch-payment-acp`   | `action_trusteed_dispatch_payment_acp`   | ❌ no — needs an MCP gateway  | OFF            |
+| `trusteed/dispatch-payment-acp`   | `action_trusteed_dispatch_payment_acp`   | ❌ no (needs an MCP gateway)  | OFF            |
 | `trusteed/dispatch-payment-x402`  | `action_trusteed_dispatch_payment_x402`  | ✅ yes (once toggled on)      | OFF            |
-| `trusteed/dispatch-payment-ap2`   | `action_trusteed_dispatch_payment_ap2`   | ❌ no — backend `planned`      | OFF            |
+| `trusteed/dispatch-payment-ap2`   | `action_trusteed_dispatch_payment_ap2`   | ❌ no (backend `planned`)      | OFF            |
 
 Only two of the five tools can complete a call from this module today:
 `verify-agent-signature` and `dispatch-payment-x402`. The other three raise `UserError`,
