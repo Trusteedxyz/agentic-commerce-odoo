@@ -1,4 +1,4 @@
-# Odoo Agentic Tools — Manual Verification Runbook
+# Odoo Agentic Tools: Manual Verification Runbook
 
 **Scope:** Validate that the 5 Trusteed agentic tools register as `ir.actions.server` with
 `usage='ai_tool'`, that the per-tool availability gate behaves as documented, and that the
@@ -6,7 +6,7 @@ Trust Receipt JWS attachment lands on posted customer invoices.
 **Time:** ~20 minutes (manual).
 
 > This is an internal verification runbook for maintainers of this addon. It is not an
-> installation guide — see `README.md` for installation.
+> installation guide. See `README.md` for installation.
 
 ---
 
@@ -53,17 +53,17 @@ for a in actions:
 PY
 ```
 
-**Expected output — always 5 records.** All five are declared unconditionally in
-`data/ai_tools.xml`; no configuration flag changes how many get registered. Whether a tool
-can be *invoked* is a separate, runtime concern (section 4).
+**Expected output: always 5 records.** `data/ai_tools.xml` declares all five
+unconditionally, so no configuration flag changes how many get registered. Whether a tool
+can be *invoked* is a separate runtime question (section 4).
 
 ```
 Found 5 ai_tool actions:
   - Trusteed: Sign Trust Receipt
   - Trusteed: Verify Agent Signature
-  - Trusteed: Dispatch Payment ACP
-  - Trusteed: Dispatch Payment x402
-  - Trusteed: Dispatch Payment AP2 (experimental)
+  - Trusteed: Dispatch Payment (ACP)
+  - Trusteed: Dispatch Payment (x402)
+  - Trusteed: Dispatch Payment (AP2)
 ```
 
 The canonical xml_ids are:
@@ -83,8 +83,8 @@ The canonical xml_ids are:
 
 ## 4. Verify the Availability Gate (5 min)
 
-Two of the five tools are `PLANNED` — their backend is **not deployed**, so they are
-reported unavailable and **always raise `UserError`**, regardless of the merchant's toggle
+Two of the five tools are `PLANNED`. Their backend is not deployed, so both report
+unavailable and always raise `UserError`, whatever the merchant's toggle says
 (`utils/tool_toggles.py`, `PLANNED_TOOL_IDS`):
 
 - `trusteed/sign-trust-receipt`
@@ -159,17 +159,18 @@ PY
 
 1. If a receipt exists upstream for that order, exactly one `application/jose` attachment is
    present on the invoice, and the invoice chatter carries the corresponding message.
-2. If no receipt exists (or the API base is unreachable), **zero** attachments and a warning
-   in the log — the override is deliberately non-blocking and must never fail `action_post`.
+2. If no receipt exists (or the API base is unreachable), there are **zero** attachments and
+   a warning in the log. The override is deliberately non-blocking and must never fail
+   `action_post`.
 3. Re-running `action_post` does not create a second `.jose` attachment (idempotency).
 
 ## 6. UI Verification (3 min)
 
 1. Open `http://localhost:8069/web` and log in as an administrator.
-2. **Sales → Orders** (kanban view) — the trust badge renders only when
-   `trusteed_trust_level != 'none'`. On a fresh order with no trust signals, its absence is
-   the expected result, not a failure.
-3. Open the posted invoice — confirm the `.jose` attachment and the chatter message from
+2. Go to **Sales → Orders** (kanban view). The trust badge renders only when
+   `trusteed_trust_level != 'none'`, so a fresh order with no trust signals shows no badge.
+   That is expected, not a failure.
+3. Open the posted invoice and confirm the `.jose` attachment and the chatter message from
    section 5.
 
 ## 7. Acceptance Criteria

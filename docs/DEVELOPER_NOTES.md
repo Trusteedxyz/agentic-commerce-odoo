@@ -1,4 +1,4 @@
-# Trusteed — Odoo Addon Developer Notes
+# Trusteed: Odoo Addon Developer Notes
 
 Embeds the Trusteed Trust Center and Merchant Center inside the Odoo Back Office via the
 embed bootstrap two-step auth flow.
@@ -11,7 +11,7 @@ embed bootstrap two-step auth flow.
 
 - Trust Center: receipts, signing keys, audit log, trust score
 - Merchant Center: orders, payment methods, agents, checkout config, certification + NLWeb
-- Onboarding wizard (4 steps — `trusteed.setup.wizard` TransientModel)
+- Onboarding wizard (4 steps, `trusteed.setup.wizard` TransientModel)
 - Multi-company support: OWL `useEffect` on `activeCompanyId`, silent re-bootstrap on company
   switch + toast notification
 - `sale.order` kanban trust score badge, `account.move` JWS receipt auto-attachment on post
@@ -21,7 +21,7 @@ embed bootstrap two-step auth flow.
 
 ## Requirements
 
-- Odoo 17.0 or 18.0 (Community or Enterprise) — see [Compatibility](#compatibility)
+- Odoo 17.0 or 18.0 (Community or Enterprise). See [Compatibility](#compatibility)
 - Python 3.10+
 - Python package `cryptography` (declared in `external_dependencies`)
 - A Trusteed account at [trusteed.xyz](https://trusteed.xyz)
@@ -43,7 +43,7 @@ embed bootstrap two-step auth flow.
 3. In the Odoo Back Office: **Settings → Activate developer mode**.
 4. **Settings → Apps → Update Apps List**.
 5. Search for "Trusteed" → **Install**.
-6. Navigate to the new **Trusteed** menu — the Setup Wizard opens automatically.
+6. Open the new **Trusteed** menu. The Setup Wizard starts on its own.
 
 ### Option 3: Local development stack
 
@@ -56,10 +56,10 @@ package; provide your own, or use an existing Odoo image with a bind-mounted add
 On first install (or when the `trusteed.merchant_id` config parameter is empty), the addon
 opens the 4-step wizard (`trusteed.setup.wizard`):
 
-1. **Welcome** — confirm prerequisites (account + HTTPS outbound from the Odoo host)
-2. **Connect** — open the Trusteed Portal, navigate to "Connect a Store → Odoo"
-3. **Credentials** — paste your Merchant ID and Bootstrap Secret (must be exactly 64 hex chars)
-4. **Test** — click "Check credentials" to verify the connection
+1. Welcome: confirm prerequisites (a Trusteed account and outbound HTTPS from the Odoo host)
+2. Connect: open the Trusteed Portal and go to "Connect a Store → Odoo"
+3. Credentials: paste your Merchant ID and Bootstrap Secret (exactly 64 hex characters)
+4. Test: click "Check credentials" to verify the connection
 
 ## Multi-company
 
@@ -76,7 +76,7 @@ Principal functional pieces (test files and compiled assets abbreviated):
 
 ```
 trusteed/
-├── __manifest__.py                    — Version 18.0.1.1.2 + dependencies
+├── __manifest__.py                    — Version 18.0.1.2.4 + dependencies
 ├── hooks.py                           — pre_init_hook (SaaS detection blocks install),
 │                                        post_init_hook (ai_schema rows, toggle seeding,
 │                                        capability report)
@@ -145,12 +145,13 @@ trusteed/
 - Bootstrap secret cleared from the TransientModel immediately after persisting.
 - Token lifetime is set by the Trusteed backend, not by this addon: the controller reads the
   `expires_at` value returned by the relay. Do not rely on a hard-coded TTL here.
-- `bootstrap_secret` is deleted from memory (`del secret`) immediately after the relay call —
-  never logged, and never included in any log message.
+- `bootstrap_secret` is deleted from memory (`del secret`) immediately after the relay call.
+  It is never logged.
 - The bootstrap route checks `trusteed.group_user` **before** reading any config parameter.
 - CSRF validated via Odoo's native CSRF token on all controller routes.
 - SSRF prevention on `api_base`: HTTPS-only, blocks RFC-1918, loopback, link-local,
-  CGN (100.64.0.0/10), multicast and reserved ranges — via `utils/ssrf.validate_api_base()`.
+  CGN (100.64.0.0/10), multicast and reserved ranges. The check lives in
+  `utils/ssrf.validate_api_base()`.
 - Redirect-based SSRF blocked: all `requests` calls use `allow_redirects=False` with explicit
   3xx rejection.
 - URL path injection prevention: the order reference in `account_move_jws` is
@@ -190,9 +191,9 @@ The addon exposes **5 AI-callable tools** via Odoo's `ir.actions.server` with `u
 | `trusteed/dispatch-payment-x402`  | `action_trusteed_dispatch_payment_x402`  | ✅ yes (once toggled on)      | OFF            |
 | `trusteed/dispatch-payment-ap2`   | `action_trusteed_dispatch_payment_ap2`   | ❌ no — backend `planned`      | OFF            |
 
-Only **two** of the five tools can currently complete a call from this module:
-`verify-agent-signature` and `dispatch-payment-x402`. The other three raise `UserError`
-unconditionally — see below.
+Only two of the five tools can complete a call from this module today:
+`verify-agent-signature` and `dispatch-payment-x402`. The other three raise `UserError`,
+as the sections below explain.
 
 Prefix the xml_id with the module name to resolve it, e.g.
 `env.ref('trusteed.action_trusteed_verify_agent_signature')`.
@@ -200,22 +201,22 @@ Prefix the xml_id with the module name to resolve it, e.g.
 ### Availability and toggles
 
 Each tool has an independent merchant toggle persisted in `ir.config_parameter`
-(`utils/tool_toggles.py`). Installing the addon **never** silently enables agent payments —
-the three payment rails default to OFF and must be opted into.
+(`utils/tool_toggles.py`). Installing the addon never enables agent payments on its own:
+the three payment rails default to OFF and each merchant has to opt in.
 
-Two tools are `backendStatus: planned` — **no backend is deployed for them**. They are
-reported UNAVAILABLE and **always raise `UserError`** regardless of their toggle (honest
-gate); the toggle merely preserves the merchant's preference for when those backends ship:
+Two tools have `backendStatus: planned`, which means no backend is deployed for them. Both
+report UNAVAILABLE and always raise `UserError`, whatever their toggle says. The toggle only
+keeps the merchant's preference for when those backends ship:
 
-- `trusteed/sign-trust-receipt` — there is no standalone receipt-signing write endpoint.
-  Trust Receipts are emitted as a side effect of the checkout pipeline and are *read* back.
-  **Do not write integrations that assume `run_sign_trust_receipt` returns a JWS** — it
-  cannot, today.
+- `trusteed/sign-trust-receipt`: there is no standalone receipt-signing write endpoint.
+  The checkout pipeline emits Trust Receipts as a side effect, and integrations read them
+  back. **Do not write integrations that assume `run_sign_trust_receipt` returns a JWS.**
+  Today it can't.
 - `trusteed/dispatch-payment-ap2`
 
 A third tool passes the availability gate but is still not fulfillable from this module:
 
-- `trusteed/dispatch-payment-acp` — the canonical ACP backend is the `process_agent_payment`
+- `trusteed/dispatch-payment-acp`: the canonical ACP backend is the `process_agent_payment`
   MCP checkout-bucket tool, reached over a store-slug MCP gateway that this addon does not
   provision. There is no REST dispatch route for it, so the method fails closed with an
   explicit `UserError` rather than issuing a guaranteed-404 call. Use the x402 rail, or the
@@ -224,7 +225,7 @@ A third tool passes the availability gate but is still not fulfillable from this
 ### How it works
 
 1. `data/ai_tools.xml` declares the 5 `ir.actions.server` records with `usage='ai_tool'`
-   (`noupdate="1"` — created once on install, not clobbered on upgrade).
+   (`noupdate="1"`: created once on install, not overwritten on upgrade).
 2. Each server action calls the corresponding `run_*` method on the `trusteed.ai.tool` model
    (`models/ai_tool_invocation.py`).
 3. That model invokes the Trusteed backend via `models/api_client.py`
@@ -237,15 +238,15 @@ A third tool passes the availability gate but is still not fulfillable from this
 
 `usage='ai_tool'` is the canonical registration mechanism and is **fully supported in
 Odoo 19.0**, where the `ai_schema` field was introduced. On **Odoo 18.x the field exists but
-the AI App discovery UI may not surface these actions** — they remain callable via
+the AI App discovery UI may not surface these actions**. They remain callable via
 `env.ref(...).run()` and via the post-install hook, and `ai_schema` row creation is skipped
 with a logged notice. The authoritative statement of this behaviour is the DESIGN NOTES
 header of `data/ai_tools.xml`; treat that file as the source of truth.
 
 The output contract follows the Odoo 19 AI App convention: the action's `code` assigns the
 tool result to `ai['result']`. Registration is also intended to be consumable by a future
-Odoo MCP server implementation, but no such server is shipped or dated by Odoo today — no
-forward-compatibility guarantee is made here.
+Odoo MCP server implementation. Odoo has neither shipped nor dated such a server, so this
+addon makes no forward-compatibility guarantee.
 
 ### Required Odoo groups
 
