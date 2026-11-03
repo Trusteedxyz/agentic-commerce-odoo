@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from odoo import models
 
 from .api_client import TrusteedApiClient, TrusteedApiError
+from .order_event_credentials import resolve_order_event_credentials
 from ..utils.jcs import canonicalize as jcs_canonicalize
 
 _logger = logging.getLogger(__name__)
@@ -76,18 +77,14 @@ class AccountMoveRefundProxy(models.Model):
         return result
 
     def _maybe_emit_refund_proxy(self, move) -> None:
-        merchant_id = self._resolve_merchant_id(move.company_id.id)
-        if not merchant_id:
+        creds = resolve_order_event_credentials(self.env, move.company_id.id)
+        if creds is None:
             return
-
-        config = self.env["ir.config_parameter"].sudo()
-        api_base = config.get_param("trusteed.api_base", "")
-        bootstrap = config.get_param("trusteed.access_token", "") or ""
-        hmac_secret = config.get_param("trusteed.hmac_secret", "") or ""
-        installation_id = config.get_param("trusteed.installation_id", "") or ""
-
-        if not api_base or not bootstrap or not hmac_secret or not installation_id:
-            return
+        merchant_id = creds["merchantId"]
+        api_base = creds["apiBase"]
+        hmac_secret = creds["hmacSecret"]
+        installation_id = creds["installationId"]
+        bootstrap = ""  # el endpoint autentica por HMAC de instalación
 
         reversed_invoice = move.reversed_entry_id
         sale = None
@@ -194,37 +191,3 @@ class AccountMoveRefundProxy(models.Model):
                 move.id,
                 exc,
             )
-
-    def _resolve_merchant_id(self, company_id: int) -> str | None:
-        mapping = self.env["enforcement.company.map"].sudo().search(
-            [("company_id", "=", company_id)], limit=1
-        )
-        if not mapping:
-            # R10 (codex P2#5): observable failure mode for unmapped company.
-            try:
-                company_name = self.env["res.company"].sudo().browse(company_id).name
-            except Exception:  # noqa: BLE001
-                company_name = "<unknown>"
-            _logger.warning(
-                "unmapped_company_id (refund_proxy) company_id=%s company_name=%s — "
-                "configure enforcement.company.map to enable event emission",
-                company_id,
-                company_name,
-            )
-            try:
-                import sentry_sdk  # type: ignore
-                sentry_sdk.add_breadcrumb(
-                    category="odoo.refund_proxy",
-                    level="warning",
-                    message="unmapped_company_id",
-                    data={
-                        "company_id": company_id,
-                        "company_name": company_name,
-                        "no_mapping_found": True,
-                    },
-                )
-            except ImportError:
-                pass
-            # TODO(R10): expose Prometheus counter once Odoo has prom-client plugin.
-            return None
-        return mapping.merchant_id

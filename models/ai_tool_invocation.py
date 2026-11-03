@@ -24,7 +24,7 @@ import logging
 import uuid
 
 from odoo import api, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 from .api_client import TrusteedApiClient, TrusteedApiError
 from ..utils.tool_toggles import (
@@ -50,7 +50,13 @@ class TrusteedAiTool(models.AbstractModel):
         `planned` tools (no deployed backend — sign-trust-receipt,
         dispatch-payment-ap2) are always unavailable; payment rails default OFF
         (opt-in). The toggle is read from ir.config_parameter.
+
+        SEC-202: every ``run_*`` passes through here, and the tools use the
+        store's S2S secret via sudo(), so only Trusteed administrators may call
+        them (any internal user could reach them via call_kw before).
         """
+        if not self.env.user.has_group("trusteed.group_admin"):
+            raise AccessError("Only Trusteed administrators can invoke Trusteed AI tools.")
         icp = self.env["ir.config_parameter"].sudo()
         if not _tool_is_available(tool_id):
             if tool_id in PLANNED_TOOL_IDS:

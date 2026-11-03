@@ -28,6 +28,9 @@
               <setting id="trusteed_api_base_setting" string="API Base URL">
                 <field name="trusteed_api_base"/>
               </setting>
+              <setting id="trusteed_paypal_sync_setting" string="Sync PayPal account" help="Send the PayPal REST credentials of Odoo's PayPal provider to Trusteed, so agent payments settle in your own PayPal account. Off by default.">
+                <field name="trusteed_paypal_sync_enabled"/>
+              </setting>
             </block>
             <block title="Agentic Tools" name="trusteed_agentic_tools_setting_container">
               <div class="text-muted mb16">

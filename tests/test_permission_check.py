@@ -203,6 +203,41 @@ class TestApiClientFailClosed(unittest.TestCase):
             self.assertIn("trusteed.bootstrap_secret", str(exc))
 
 
+class TestToolsRequireTrusteedAdmin(unittest.TestCase):
+    """SEC-202: a non-admin internal user cannot run any AI tool (fail-closed)."""
+
+    def _instance(self, is_admin):
+        inst = TrusteedAiTool.__new__(TrusteedAiTool)
+        user = MagicMock()
+        user.has_group.side_effect = lambda xmlid: is_admin and xmlid == "trusteed.group_admin"
+        icp = MagicMock()
+        icp.get_param.return_value = "1"
+        env = MagicMock()
+        env.user = user
+        env.__getitem__ = lambda self, k: MagicMock(sudo=lambda: icp)
+        inst.env = env
+        inst._get_api_client = MagicMock()
+        return inst
+
+    def test_non_admin_is_denied_before_any_backend_call(self):
+        inst = self._instance(is_admin=False)
+        calls = [
+            lambda: inst.run_verify_agent_signature("POST", "https://x.test", {}),
+            lambda: inst.run_dispatch_payment_x402("c", "k", "m", {"a": 1}),
+            lambda: inst.run_dispatch_payment_acp("c", "k", "m"),
+        ]
+        for call in calls:
+            with self.assertRaises(Exception) as ctx:
+                call()
+            self.assertIn("Only Trusteed administrators", str(ctx.exception))
+        inst._get_api_client.assert_not_called()
+
+    def test_admin_passes_the_group_gate(self):
+        inst = self._instance(is_admin=True)
+        with self.assertRaises(_UserError):  # ACP is not fulfillable: gate passed, tool refused
+            inst.run_dispatch_payment_acp("c", "k", "m")
+
+
 # ---------------------------------------------------------------------------
 # T083-3: ir.model.access.csv structural assertions
 # ---------------------------------------------------------------------------

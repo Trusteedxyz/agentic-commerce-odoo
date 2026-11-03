@@ -1,6 +1,6 @@
 {
     "name": "Trusteed Trust Center",
-    "version": "18.0.1.2.4",
+    "version": "18.0.1.2.6",
     "summary": "Embed Trusteed Trust Center inside Odoo backoffice (Odoo.sh / on-premise only).",
     "description": """
 Trusteed embed shell — production addon for Odoo 18.
@@ -57,4 +57,8 @@ Odoo Online (SaaS) is blocked at install time (pre_init_hook, TEAH-091/092).
     # spec-046 T083: Post-install hook — creates ai_schema argument rows for
     # each ir.actions.server ai_tool (One2many, cannot be set in XML data).
     "post_init_hook": "post_init_hook",
+    # 2026-09-05: baja del comercio al desinstalar. Sin esto, Odoo era la
+    # única plataforma junto a Magento sin ninguna señal de baja: el comercio
+    # seguía publicado en el registro público indefinidamente.
+    "uninstall_hook": "uninstall_hook",
 }

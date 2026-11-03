@@ -261,3 +261,50 @@ def _report_signal_capabilities(env):
             "trusteed post_init_hook: reporte de capacidades de señales fallido: %s",
             exc,
         )
+
+
+def uninstall_hook(env):
+    """Dar de baja la tienda en Trusteed al desinstalar el addon — 2026-09-05.
+
+    Odoo no tenía nada equivalente al ``app/uninstalled`` de Shopify: al
+    desinstalar, el comercio seguía publicado en
+    ``/.well-known/merchant-index.json``, en ``/api/v1/stores/directory`` y con
+    su endpoint MCP anunciado, con la puntuación de confianza recalculándose
+    sobre un catálogo que ya nadie sincroniza. No había ninguna otra señal.
+
+    Autentica con el secreto S2S por tienda, que es la credencial DURADERA que
+    el addon conserva en este momento — el token de sesión del panel ya no
+    existe cuando se desinstala.
+
+    **No lanza nunca.** Odoo aborta la desinstalación si un hook falla, y dejar
+    a un comerciante sin poder quitar el addon porque nuestro backend no
+    contesta sería un fallo peor que el registro desactualizado. Para eso está
+    la segunda red: el barrido por latido, que no depende de este aviso.
+    """
+    params = env["ir.config_parameter"].sudo()
+    api_base = (params.get_param("trusteed.api_base") or "").strip()
+    secret = (params.get_param("trusteed.bootstrap_secret") or "").strip()
+    merchant_id = (params.get_param("trusteed.merchant_id") or "").strip()
+
+    if not api_base or not secret or not merchant_id:
+        _logger.info(
+            "[trusteed] uninstall: sin credenciales configuradas, no hay baja que dar"
+        )
+        return
+
+    try:
+        from .models.api_client import TrusteedApiClient
+
+        client = TrusteedApiClient(api_base, secret)
+        client.call_with_s2s(
+            "/api/v1/embed/agentic-tools/deprovision",
+            {"platform": "ODOO"},
+            merchant_id,
+        )
+        _logger.info("[trusteed] uninstall: comercio dado de baja en Trusteed")
+    except Exception as exc:  # noqa: BLE001 — ver el docstring
+        _logger.warning(
+            "[trusteed] uninstall: no se pudo dar de baja (%s). "
+            "El comercio puede seguir publicado hasta el barrido por latido.",
+            exc,
+        )

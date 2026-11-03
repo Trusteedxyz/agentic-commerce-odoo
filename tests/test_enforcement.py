@@ -13,6 +13,7 @@ import json
 import sys
 import time
 import types
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -97,6 +98,7 @@ _ensure_pkg(_UTILS_PKG)
 
 # Load utils.ssrf (no Odoo deps, no relative imports)
 _ssrf_mod = _load_module("utils/ssrf.py", f"{_UTILS_PKG}.ssrf", _UTILS_PKG)
+_load_module("utils/agent_reason.py", f"{_UTILS_PKG}.agent_reason", _UTILS_PKG)
 # Make it accessible as _ROOT.utils.ssrf for relative resolution
 sys.modules[_UTILS_PKG].ssrf = _ssrf_mod  # type: ignore[attr-defined]
 # Also register under the plain key that the relative import will synthesise
@@ -107,6 +109,13 @@ sys.modules.setdefault(f"{_ROOT}.utils.ssrf", _ssrf_mod)
 _verifier_mod = _load_module(
     "models/enforcement_token_verifier.py",
     f"{_MODELS_PKG}.enforcement_token_verifier",
+    _MODELS_PKG,
+)
+
+# Task 24: decodificador puro del payload (``from . import snapshot_payload_decoder``).
+_load_module(
+    "models/snapshot_payload_decoder.py",
+    f"{_MODELS_PKG}.snapshot_payload_decoder",
     _MODELS_PKG,
 )
 
@@ -177,7 +186,10 @@ def _make_snapshot_jws(
     payload = {
         "merchantId": merchant_id,
         "ruleSetVersion": "1.0",
-        "validUntil": str(now + valid_offset),
+        # Como el servidor (``z.string().datetime({ offset: true })``): ISO 8601.
+        "validUntil": datetime.fromtimestamp(now + valid_offset, tz=timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.000Z"
+        ),
         "killSwitch": kill_switch,
         "fallbackMode": "balanced",
         "rules": [{"id": "R001", "tier": 1}],
@@ -295,7 +307,7 @@ class TestVerifyAgentToken:
         intent_hash = self._intent_hash()
         jws = _make_agent_token_jws(
             checkout_intent_hash=intent_hash,
-            nonce="nonce-valid-001",
+            nonce="nonce-valid-0001",
         )
         result = verify_agent_token(jws, intent_hash, _MERCHANT_ID, self._resolver())
 
@@ -451,7 +463,8 @@ class TestPullSnapshot:
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.text = jws
+        mock_resp.headers = {}
+        mock_resp.iter_content = lambda chunk_size=None: iter([jws.encode("utf-8")])
 
         # Mock both requests.get and _fetch_jwks to avoid all network calls
         with patch.object(_snapshot_mod, "_fetch_jwks",
@@ -479,7 +492,8 @@ class TestPullSnapshot:
         jws = _make_snapshot_jws()
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.text = jws
+        mock_resp.headers = {}
+        mock_resp.iter_content = lambda chunk_size=None: iter([jws.encode("utf-8")])
 
         captured = {}
 

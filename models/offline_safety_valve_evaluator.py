@@ -42,8 +42,40 @@ def _short_code(rule_code: str) -> str:
     return rule_code if dot == -1 else rule_code[:dot]
 
 
+def _normalize_country(value) -> Optional[str]:
+    """trim + uppercase; empty / non-string -> None (mirror of normalizeCountryCode in TS)."""
+    if not isinstance(value, str):
+        return None
+    code = value.strip().upper()
+    return code or None
+
+
+def _normalize_country_list(values) -> list:
+    out = []
+    for value in values or []:
+        code = _normalize_country(value)
+        if code is not None:
+            out.append(code)
+    return out
+
+
+def _normalize_currency(value) -> Optional[str]:
+    """ISO 4217: trim + uppercase, exactly 3 letters A-Z; anything else -> None."""
+    if not isinstance(value, str):
+        return None
+    code = value.strip().upper()
+    return code if len(code) == 3 and code.isascii() and code.isalpha() else None
+
+
 def _order_country(order_context: dict) -> Optional[str]:
-    return order_context.get("billingCountry") or order_context.get("shippingCountry")
+    billing = order_context.get("billingCountry")
+    return _normalize_country(billing if billing is not None else order_context.get("shippingCountry"))
+
+
+def _delivery_country(order_context: dict) -> Optional[str]:
+    """R014 is about DELIVERY: shippingCountry ?? billingCountry (R019/R030 keep _order_country)."""
+    shipping = _normalize_country(order_context.get("shippingCountry"))
+    return shipping if shipping is not None else _normalize_country(order_context.get("billingCountry"))
 
 
 def _attr_bool(cart_attributes: dict, key: str) -> bool:
@@ -64,8 +96,8 @@ def _attr_number(cart_attributes: dict, key: str) -> Optional[float]:
 
 
 def _eval_r014(params: dict, order_context: dict, cart_attributes: dict) -> Optional[str]:
-    high_risk = params.get("highRiskCountries") or list(DEFAULT_HIGH_RISK_COUNTRIES)
-    country = _order_country(order_context)
+    high_risk = _normalize_country_list(params.get("highRiskCountries") or list(DEFAULT_HIGH_RISK_COUNTRIES))
+    country = _delivery_country(order_context)
     if country is not None and country in high_risk:
         return f"delivery country {country} is high-risk"
     return None
@@ -105,10 +137,10 @@ def _eval_r019(params: dict, order_context: dict, cart_attributes: dict) -> Opti
     country = _order_country(order_context)
     if country is None:
         return None
-    blocked = params.get("blockedCountries") or []
+    blocked = _normalize_country_list(params.get("blockedCountries"))
     if country in blocked:
         return f"country {country} is blocked"
-    allowed = params.get("allowedCountries") or []
+    allowed = _normalize_country_list(params.get("allowedCountries"))
     if allowed and country not in allowed:
         return f"country {country} is not allowed"
     return None
@@ -194,12 +226,27 @@ def _eval_r029(params: dict, order_context: dict, cart_attributes: dict) -> Opti
 def _eval_r030(params: dict, order_context: dict, cart_attributes: dict) -> Optional[str]:
     max_cents = params.get("maxAmountCents")
     cart_total_cents = int(order_context.get("cartTotalCents", 0))
-    if max_cents is not None and cart_total_cents > max_cents:
+    # ee5861063 + M1: only compare against a cap of the SAME currency (no FX).
+    # Order currency absent/malformed or cap currency undeclared/malformed ->
+    # compared as before (mirror of classifyMoneyCap). Different currencies are
+    # not comparable; the actor signal order_context["agentCheckout"] decides:
+    # True -> agent: BLOCK "currency not comparable"; False -> person: amount
+    # skipped (country control still applies); absent/non-bool -> unknown actor:
+    # conservative, compare as before D2.
+    order_currency = _normalize_currency(order_context.get("currency"))
+    cap_currency = _normalize_currency(params.get("maxAmountCurrency"))
+    agent_signal = order_context.get("agentCheckout")
+    same_or_unknown = order_currency is None or cap_currency is None or order_currency == cap_currency
+    comparable = same_or_unknown or not isinstance(agent_signal, bool)
+    not_comparable_agent = (not same_or_unknown) and agent_signal is True
+    if max_cents is not None and comparable and cart_total_cents > max_cents:
         return f"cart total {cart_total_cents} > merchant max {max_cents}"
     country = _order_country(order_context)
-    allowed = params.get("allowedCountries") or []
+    allowed = _normalize_country_list(params.get("allowedCountries"))
     if country is not None and allowed and country not in allowed:
         return f"country {country} is outside merchant controls"
+    if max_cents is not None and not_comparable_agent:
+        return f"currency not comparable: order {order_currency}, merchant cap {cap_currency}"
     return None
 
 

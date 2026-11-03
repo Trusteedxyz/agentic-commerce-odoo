@@ -86,13 +86,15 @@ class _FakeUser:
     def __init__(self, uid: int, company_ids: list[int], has_group: bool = True):
         self.id = uid
         self._has_group = has_group
+        self.groups_asked = []
         _cids = types.SimpleNamespace(ids=company_ids)
         self.company_ids = _cids
 
     def _is_public(self):
         return False
 
-    def has_group(self, _name):
+    def has_group(self, name):
+        self.groups_asked.append(name)
         return self._has_group
 
 
@@ -200,6 +202,8 @@ class TestOdooEmbedRelay(unittest.TestCase):
             result = controller.exchange_bootstrap()
         self.assertEqual(result.get("error"), "unauthorized")
         issue.assert_not_called()
+        # SEC-184: el token de panel puede escribir; solo el administrador.
+        self.assertEqual(user.groups_asked, ["trusteed.group_admin"])
 
     def test_relay_rejection_propagates(self):
         """A relay non-200 surfaces as issue_token_rejected, not success."""

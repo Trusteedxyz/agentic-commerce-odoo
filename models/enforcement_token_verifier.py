@@ -8,7 +8,7 @@ Verification order:
   2. Enforce alg=EdDSA, typ=trusteed-agent-token+jwt.
   3. Resolve signing key from caller-supplied agent_did_resolver dict.
   4. Verify Ed25519 signature.
-  5. Validate JWT claims: aud, merchantId, exp (+30s skew), window ≤330s,
+  5. Validate JWT claims: aud, merchantId, exp (+30s skew), window ≤330s, iat (≤30s future, ≤300s old),
      checkoutIntentHash binding.
   6. Nonce replay detection (in-process dict, TTL 300s).
 
@@ -25,15 +25,33 @@ from typing import Optional
 
 _logger = logging.getLogger(__name__)
 
-# Spec-048 P2.8 — jti format gate. Mirrors WC class-token-verifier JTI_RE and
-# backend Zod regex in agent-events-nonce.routes.ts.
-_JTI_RE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+# B5 (2026-10-01) — formato del identificador de un solo uso. El contrato
+# CANÓNICO es el claim `nonce` (`AgentTokenPayloadSchema`: string 16..64;
+# el verificador del servidor consume `payload.nonce`). `jti` sólo se acepta
+# como ALIAS HEREDADO cuando `nonce` está ausente, con los MISMOS límites. El
+# juego de caracteres es el que exige el endpoint de consumo del servidor
+# (`agent-events-nonce.routes.ts`), así un identificador que éste rechazaría
+# con 400 se descarta aquí en vez de acabar como INDETERMINADO.
+_NONCE_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 
 # sha256(agentDid + nonce) → expire_ts
 _NONCE_CACHE: dict[str, float] = {}
 
 _MAX_TOKEN_WINDOW_SECONDS = 330
 _EXP_CLOCK_SKEW_SECONDS = 30
+# L2 (Task 43b) — misma política de `iat` que el verificador de WooCommerce
+# (`class-token-verifier.php`): un `iat` más de 30 s en el futuro es inválido
+# (con un tope de ventana, un `iat` adelantado daría un token de vida deslizante)
+# y el token no puede ser más viejo que `_MAX_TOKEN_AGE_SECONDS` desde su `iat`.
+#
+# Decisión 48 (2026-10-02): el MISMO número en todos los verificadores — los
+# 300 s que declara el contrato (`AgentTokenPayloadSchema`: `exp - iat <= 300`).
+# Aquí y en WooCommerce eran 120 s, y los agentes emiten sus propios tokens con
+# hasta 300 s de vida: un tope menor rechazaba tokens legítimos que el servidor
+# y la Shopify Function aceptan. Atado entre lenguajes por
+# packages/shared/src/enforcement/__tests__/agent-token-max-age-parity.test.ts.
+_IAT_FUTURE_SKEW_SECONDS = 30
+_MAX_TOKEN_AGE_SECONDS = 300
 _NONCE_TTL_SECONDS = 300
 
 
@@ -102,6 +120,12 @@ def verify_agent_token(
         return None
 
     # Step 2 — Header claim checks
+    # RFC 7515 §4.1.11: quien no entiende una extensión crítica debe rechazar el
+    # JWS, y este verificador no entiende ninguna: ``crit`` presente (incluso
+    # ``[]``, que el RFC prohíbe) invalida el token. Antes de resolver la clave.
+    if "crit" in header:
+        _logger.debug("CEL token verify: crit header present")
+        return None
     if header.get("alg") != "EdDSA":
         _logger.debug("CEL token verify: unexpected alg=%s", header.get("alg"))
         return None
@@ -121,6 +145,11 @@ def verify_agent_token(
     jwk = agent_did_resolver.get(agent_did)
     if not isinstance(jwk, dict) or not jwk.get("x"):
         _logger.debug("CEL token verify: agent DID %s not in resolver", agent_did)
+        return None
+    # Task 21: the resolver now carries kty/crv when the snapshot does; a key
+    # that declares another type is not an Ed25519 key, whatever its length.
+    if jwk.get("kty", "OKP") != "OKP" or jwk.get("crv", "Ed25519") != "Ed25519":
+        _logger.debug("CEL token verify: agent DID %s key is not OKP/Ed25519", agent_did)
         return None
     try:
         pubkey_bytes = _b64url_decode(jwk["x"])
@@ -172,6 +201,12 @@ def verify_agent_token(
     if exp - iat > _MAX_TOKEN_WINDOW_SECONDS:
         _logger.debug("CEL token verify: token window too wide (%ss)", exp - iat)
         return None
+    if iat - _IAT_FUTURE_SKEW_SECONDS > now:
+        _logger.debug("CEL token verify: iat in the future (iat=%s, now=%s)", iat, now)
+        return None
+    if now - iat > _MAX_TOKEN_AGE_SECONDS:
+        _logger.debug("CEL token verify: token too old (age=%ss)", now - iat)
+        return None
     token_hash = payload.get("checkoutIntentHash", "")
     if token_hash != checkout_intent_hash:
         _logger.debug("CEL token verify: checkoutIntentHash mismatch "
@@ -180,21 +215,22 @@ def verify_agent_token(
 
     # Step 6 — Nonce replay detection
     #
-    # H4 (verificación 2026-07-28) — el `nonce` es OBLIGATORIO. El schema
-    # canónico lo exige con 16..64 caracteres (`AgentTokenPayloadSchema` en
-    # packages/shared/src/enforcement/types.ts) y el verificador de WooCommerce
-    # ya lo rechazaba fuera de rango. Aquí la deduplicación colgaba de `if
-    # nonce:`, así que un token que simplemente OMITÍA el claim se saltaba
-    # entera la detección de replay offline. Fail-closed, igual que WC/PS.
-    nonce = payload.get("nonce", "")
-    if not isinstance(nonce, str):
-        _logger.debug("CEL token verify: nonce claim is not a string")
+    # El identificador de un solo uso sale del payload FIRMADO: `nonce`
+    # (canónico) o, sólo si `nonce` está AUSENTE, `jti` (alias heredado). Si
+    # `nonce` viene y está malformado el token es inválido aunque `jti` sea
+    # correcto (no se «rescata» con el alias). Ambos presentes y distintos ⇒
+    # manda `nonce`. Obligatorio y fail-closed (H4, 2026-07-28): sin
+    # identificador válido no hay detección de replay y el token no vale.
+    nonce_raw = payload["nonce"] if "nonce" in payload else payload.get("jti")
+    if not isinstance(nonce_raw, str):
+        _logger.debug("CEL token verify: nonce/jti claim missing or not a string")
         return None
-    if not 16 <= len(nonce) <= 64:
+    if not _NONCE_RE.fullmatch(nonce_raw):
         _logger.debug(
-            "CEL token verify: nonce missing or out of range (len=%d)", len(nonce)
+            "CEL token verify: nonce missing or malformed (len=%d)", len(nonce_raw)
         )
         return None
+    nonce = nonce_raw
     _evict_expired_nonces(now)
     nonce_key = hashlib.sha256(f"{agent_did}{nonce}".encode("utf-8")).hexdigest()
     if nonce_key in _NONCE_CACHE and _NONCE_CACHE[nonce_key] > now:
@@ -212,22 +248,15 @@ def verify_agent_token(
         )
         return None
 
-    # Spec-048 P2.8 — `jti` is required for backend single-use replay protection.
-    # Missing or malformed → treat token as INVALID so callers cannot bypass
-    # replay defense via tokens minted without single-use identifiers.
-    jti_raw = str(payload.get("jti", ""))
-    if not jti_raw:
-        _logger.debug("CEL token verify: missing jti claim (agent=%s)", agent_did)
-        return None
-    if not _JTI_RE.fullmatch(jti_raw):
-        _logger.debug("CEL token verify: malformed jti claim (agent=%s)", agent_did)
-        return None
-
     return {
         "agentId": iss,
         "trustScore": payload.get("agentTrustScore"),
         "platform": payload.get("platform"),
-        "jti": jti_raw,
+        # Identificador de un solo uso que se consume en el backend. `jti` se
+        # conserva como alias del mismo valor por compatibilidad con los
+        # llamadores/tests anteriores.
+        "nonce": nonce,
+        "jti": nonce,
         "exp": int(exp) if exp else 0,
     }
 

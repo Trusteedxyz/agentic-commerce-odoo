@@ -16,3 +16,5 @@ from . import capabilities_reporter          # noqa: F401 — invocado desde hoo
 # spec-043 T043-064/T043-065 — Fulfillment + refund proxy emission to backend
 from . import stock_picking_fulfillment
 from . import account_move_refund_proxy
+# F4.2 — sync de payment_paypal (Odoo 18) con la plataforma (PayPal en la cuenta del comercio)
+from . import payment_provider_paypal_sync  # noqa: F401

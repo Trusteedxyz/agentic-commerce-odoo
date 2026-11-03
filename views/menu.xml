@@ -4,7 +4,7 @@
     <menuitem id="menu_trusteed_root"
               name="Trusteed"
               sequence="90"
-              groups="trusteed.group_user"/>
+              groups="trusteed.group_admin"/>
     <menuitem id="menu_trusteed_trust"
               name="Trust Center"
               parent="menu_trusteed_root"

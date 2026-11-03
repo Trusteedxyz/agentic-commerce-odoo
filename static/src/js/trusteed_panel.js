@@ -105,7 +105,13 @@ class TrusteedPanel extends Component {
     try {
       const result = await this.rpcService("/trusteed/token", {});
       return result && result.success && result.access_token
-        ? { accessToken: result.access_token, apiBase: result.api_base }
+        ? {
+            accessToken: result.access_token,
+            apiBase: result.api_base,
+            // A11 — la caducidad REAL, para que el origen de token renueve
+            // antes de que la API conteste 401. Antes se descartaba.
+            expiresAt: result.expires_at,
+          }
         : null;
     } catch (_err) {
       return null;
@@ -157,14 +163,26 @@ class TrusteedPanel extends Component {
     const rootEl = this.rootRef.el?.querySelector("#amcp-root");
     if (!rootEl || !window.TrusteedEmbed?.mount) return;
 
-    const fetched = await this._fetchOdooToken();
-    // Capture token in closure — returned synchronously to avoid extra roundtrips.
-    const getToken = () => Promise.resolve(fetched?.accessToken ?? null);
+    // A11 (auditoría 2026-09-26) — antes el token se pedía UNA vez y se
+    // devolvía para siempre desde un cierre. Caduca en ≤900 s, así que a los
+    // 15 minutos cada sondeo del panel devolvía 401 y el panel caía. Ahora la
+    // caché la lleva `TrusteedEmbed.createTokenSource` (caducidad real, una
+    // petición en vuelo, `refresh` tras un 401). El primer `getToken` se hace
+    // aquí porque trae también `apiBase`.
+    let apiBase;
+    const tokens = window.TrusteedEmbed.createTokenSource(async () => {
+      const fetched = await this._fetchOdooToken();
+      if (fetched === null) return null;
+      apiBase = apiBase ?? fetched.apiBase;
+      return { token: fetched.accessToken, expires_at: fetched.expiresAt };
+    });
+    await tokens.getToken().catch(() => null);
 
     window.TrusteedEmbed.mount(rootEl, {
       section: this._resolveSection(),
       source: "odoo-embed",
-      getToken,
+      getToken: tokens.getToken,
+      refreshToken: tokens.refresh,
       // Sin esto la SPA cae a `navigator.language`: el idioma del navegador,
       // no el del panel. Ver `_resolveLocale`.
       locale: this._resolveLocale(),
@@ -172,7 +190,7 @@ class TrusteedPanel extends Component {
       // (production api.trusteed.xyz) — verified empirically 2026-07-23,
       // mirrors how the WooCommerce/PrestaShop loaders pass their own
       // configured apiBase into this same mount() call.
-      apiBase: fetched?.apiBase,
+      apiBase,
     });
   }
 

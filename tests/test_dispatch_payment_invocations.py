@@ -127,7 +127,14 @@ class _FakeICP:
         return default
 
 
+class _FakeUser:
+    def has_group(self, _xmlid):
+        return True
+
+
 class _FakeEnv:
+    user = _FakeUser()
+
     def __getitem__(self, _key):
         return _FakeICP()
 

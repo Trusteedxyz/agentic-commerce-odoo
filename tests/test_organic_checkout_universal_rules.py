@@ -51,6 +51,7 @@ _ensure_pkg(_MODELS_PKG)
 _ensure_pkg(_UTILS_PKG)
 
 _ssrf_mod = _load_module("utils/ssrf.py", f"{_UTILS_PKG}.ssrf", _UTILS_PKG)
+_load_module("utils/agent_reason.py", f"{_UTILS_PKG}.agent_reason", _UTILS_PKG)
 sys.modules[_UTILS_PKG].ssrf = _ssrf_mod  # type: ignore
 sys.modules.setdefault(f"{_ROOT_PKG}.utils.ssrf", _ssrf_mod)
 
@@ -66,6 +67,15 @@ _offline_valve_mod = _load_module(
     _MODELS_PKG,
 )
 
+# Plan 04, Task 13: el flujo importa `.platform_flow` (humano nunca bloqueado,
+# kill-switch sólo agéntico). Sin precargarlo, la guarda de errores internos
+# dejaría pasar al humano SIN evaluar nada y estos tests lo detectan.
+_load_module(
+    "models/platform_flow.py",
+    f"{_MODELS_PKG}.platform_flow",
+    _MODELS_PKG,
+)
+
 _enforcement_mod = _load_module(
     "models/sale_order_enforcement.py",
     f"{_MODELS_PKG}.sale_order_enforcement",
@@ -75,15 +85,23 @@ _enforcement_mod = _load_module(
 SaleOrderEnforcement = _enforcement_mod.SaleOrderEnforcement
 
 _SNAPSHOT_WITH_R030 = {
+    # Task 21 (plan 04): el snapshot firmado no trae credenciales (salen de
+    # los ajustes, ``get_credentials``) y el resolver es una LISTA.
     "merchantId": "merch-odoo-organic-test",
-    "installationId": "install-odoo-organic-001",
-    "hmacSecret": "super-secret-hmac-key-32bytesxx",
     "killSwitch": False,
     "fallbackMode": "balanced",
     "rules": [
-        {"ruleCode": "R030", "enabled": True, "params": {"maxAmountCents": 10000}},
+        # `appliesTo` como lo emite producción (SnapshotRuleSchema lo exige;
+        # R030 = ALL). Desde la Task 13 del plan 04 la válvula offline sólo
+        # aplica a un humano reglas ALL/HUMAN: sin él, el tope no le aplicaría.
+        {
+            "ruleCode": "R030.simple-controls",
+            "enabled": True,
+            "appliesTo": "ALL",
+            "params": {"maxAmountCents": 10000},
+        },
     ],
-    "agentDidResolver": {},
+    "agentDidResolver": [],
 }
 
 
@@ -110,8 +128,17 @@ class _FakeEnv(dict):
     def get_param(self, key, default=""):
         return "https://api.trusteed.xyz"
 
-    def get_snapshot(self):
+    def get_snapshot(self, company_id=None):
         return self._snapshot
+
+    def get_snapshot_result(self, company_id=None):
+        return {"status": "ok", "payload": self._snapshot, "localFallbackMode": None}
+
+    def get_credentials(self, company_id=None):
+        return {
+            "installationId": "install-odoo-organic-001",
+            "hmacSecret": "example-hmac-secret-not-real-0000",
+        }
 
 
 def _make_order(*, token=None, snapshot=None, amount_total=180.0, item_count=1):
@@ -125,6 +152,7 @@ def _make_order(*, token=None, snapshot=None, amount_total=180.0, item_count=1):
     order.x_trusteed_agent_token = token
     order.partner_shipping_id = None
     order.partner_invoice_id = None
+    order.company_id = types.SimpleNamespace(id=1)  # Task 35b
 
     def _with_context(**kwargs):
         return order
@@ -186,7 +214,7 @@ class TestOrganicCheckoutReachesLayer2:
         from odoo.exceptions import ValidationError
 
         with patch("requests.post", return_value=mock_resp):
-            with pytest.raises(ValidationError, match="R030"):
+            with pytest.raises(ValidationError, match="merchant_policy"):
                 order._trusteed_cel_enforce()
 
     def test_layer2_network_failure_falls_back_to_offline_safety_valve_block(self):
@@ -199,7 +227,7 @@ class TestOrganicCheckoutReachesLayer2:
         with patch("requests.post", side_effect=ConnectionError("boom")):
             from odoo.exceptions import ValidationError
 
-            with pytest.raises(ValidationError, match="R030"):
+            with pytest.raises(ValidationError, match="merchant_policy"):
                 order._trusteed_cel_enforce()
 
     def test_layer2_network_failure_with_balanced_mode_and_no_breach_allows(self):
@@ -222,11 +250,81 @@ class TestOrganicCheckoutReachesLayer2:
 
         assert not mock_post.called
 
-    def test_kill_switch_still_blocks_with_no_token(self):
+    def test_kill_switch_blocks_an_agentic_order(self):
+        """Sustituye a `test_kill_switch_still_blocks_with_no_token`, que fijaba
+        el comportamiento que FR-070a retira: el kill-switch paraba también a
+        los pedidos HUMANOS (sin token). Ahora sólo para el tráfico agéntico;
+        el humano con kill-switch se cubre en `test_platform_flow_wiring.py`."""
         killswitch_snapshot = {**_SNAPSHOT_WITH_R030, "killSwitch": True}
-        order = _make_order(token=None, snapshot=killswitch_snapshot)
+        order = _make_order(token="aaa.bbb.ccc", snapshot=killswitch_snapshot)
 
         from odoo.exceptions import ValidationError
 
         with pytest.raises(ValidationError, match="kill_switch"):
             order._trusteed_cel_enforce()
+
+    def test_kill_switch_does_not_stop_a_human_order(self):
+        killswitch_snapshot = {**_SNAPSHOT_WITH_R030, "killSwitch": True}
+        order = _make_order(token=None, snapshot=killswitch_snapshot, amount_total=50.0)
+
+        with patch("requests.post", return_value=_allow_response()) as mock_post:
+            order._trusteed_cel_enforce()
+
+        assert mock_post.called, "el humano sigue su evaluación normal"
+
+
+def _snapshot_with(rules):
+    return {**_SNAPSHOT_WITH_R030, "rules": rules}
+
+
+def _allow_response():
+    resp = MagicMock()
+    resp.status_code = 200
+    resp.json.return_value = {"decision": "ALLOW"}
+    return resp
+
+
+class TestLayer2DerivedFromSnapshot:
+    """Auditoría 2026-09-27 (C1): el snapshot trae códigos canónicos; la lista
+    de reglas que van a capa 2 se deriva de él, no de un conjunto corto
+    escrito a mano que se cortaba en R030."""
+
+    def test_rules_from_r031_upwards_reach_layer2(self):
+        order = _make_order(token=None, snapshot=_snapshot_with(
+            [{"ruleCode": "R035.max-order-value", "enabled": True, "params": {"maxCents": 100}}]
+        ))
+        with patch("requests.post", return_value=_allow_response()) as mock_post:
+            order._trusteed_cel_enforce()
+        assert mock_post.called
+
+    def test_tier1_server_only_rule_reaches_layer2(self):
+        order = _make_order(token=None, snapshot=_snapshot_with(
+            [{"ruleCode": "R007.cross-merchant-abuse-signal", "enabled": True, "params": {}}]
+        ))
+        with patch("requests.post", return_value=_allow_response()) as mock_post:
+            order._trusteed_cel_enforce()
+        assert mock_post.called
+
+    def test_observe_only_rule_reaches_layer2(self):
+        order = _make_order(token=None, snapshot=_snapshot_with(
+            [{"ruleCode": "R019.country-jurisdiction", "enabled": False, "mode": "observe", "params": {}}]
+        ))
+        with patch("requests.post", return_value=_allow_response()) as mock_post:
+            order._trusteed_cel_enforce()
+        assert mock_post.called
+
+    def test_only_locally_resolved_r001_does_not_call_layer2(self):
+        order = _make_order(token=None, snapshot=_snapshot_with(
+            [{"ruleCode": "R001.verified-agent-required", "enabled": True, "params": {}}]
+        ))
+        with patch("requests.post") as mock_post:
+            order._trusteed_cel_enforce()
+        assert not mock_post.called
+
+    def test_legacy_short_code_still_reaches_layer2(self):
+        order = _make_order(token=None, snapshot=_snapshot_with(
+            [{"ruleCode": "R030", "enabled": True, "params": {"maxAmountCents": 10000}}]
+        ))
+        with patch("requests.post", return_value=_allow_response()) as mock_post:
+            order._trusteed_cel_enforce()
+        assert mock_post.called

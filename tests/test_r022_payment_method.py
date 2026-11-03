@@ -114,6 +114,7 @@ _ensure_pkg(_MODELS_PKG)
 _ensure_pkg(_UTILS_PKG)
 
 _ssrf_mod = _load_module("utils/ssrf.py", f"{_UTILS_PKG}.ssrf", _UTILS_PKG)
+_load_module("utils/agent_reason.py", f"{_UTILS_PKG}.agent_reason", _UTILS_PKG)
 sys.modules[_UTILS_PKG].ssrf = _ssrf_mod  # type: ignore
 sys.modules.setdefault(f"{_ROOT_PKG}.utils.ssrf", _ssrf_mod)
 
@@ -135,10 +136,10 @@ SaleOrderEnforcement = _enforcement_mod.SaleOrderEnforcement
 # Minimal ORM stub helpers
 # ---------------------------------------------------------------------------
 
+# Task 21 (plan 04): forma REAL — el snapshot firmado no trae credenciales;
+# salen de los ajustes del addon (``get_credentials``).
 _BASE_SNAPSHOT = {
     "merchantId":     "merch-r022-test",
-    "installationId": "install-r022-001",
-    "hmacSecret":     "super-secret-hmac-key-32bytesxx",
 }
 
 
@@ -168,6 +169,12 @@ def _make_order(*, amount_total: float = 100.0, item_count: int = 2):
         def set_param(self, key, value):
             pass
 
+        def get_credentials(self, company_id=None):
+            return {
+                "installationId": "install-r022-001",
+                "hmacSecret": "example-hmac-secret-not-real-0000",
+            }
+
         @property
         def context(self):
             return {}
@@ -188,6 +195,7 @@ def _make_order(*, amount_total: float = 100.0, item_count: int = 2):
     order.partner_id                 = _FakePartner()
     order.partner_shipping_id        = None
     order.partner_invoice_id         = None
+    order.company_id                 = types.SimpleNamespace(id=1)  # Task 35b
     return order
 
 

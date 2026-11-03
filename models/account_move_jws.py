@@ -244,6 +244,14 @@ class AccountMoveJws(models.Model):
         if not merchant_id or not secret:
             return None
 
+        # EFI-097: con la bandera, solo las facturas de pedidos con agente piden
+        # recibo (el 404 es el caso normal del resto y cuesta 2 llamadas
+        # síncronas dentro de action_post). Apagada por defecto: no cambia nada.
+        if ICP.get_param("trusteed.jws_agent_orders_only", "0") == "1":
+            orders = self._resolve_sale_orders_for_move(move)
+            if not any(getattr(o, "x_trusteed_agent_did", None) for o in orders):
+                return None
+
         # SSRF prevention — validate api_base before any outbound request
         if not validate_api_base(api_base):
             _logger.error(
@@ -294,7 +302,8 @@ class AccountMoveJws(models.Model):
                 # No receipt exists yet for this order — normal state before MCP checkout.
                 return None
             if not resp.ok:
-                _logger.debug(
+                # MUE-021: a 401 here is a real, permanent fault; do not hide it at debug level.
+                _logger.warning(
                     "trusteed account_move_jws: receipts endpoint %s for order %s",
                     resp.status_code,
                     order_ref,

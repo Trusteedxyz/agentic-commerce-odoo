@@ -114,6 +114,7 @@ _ensure_pkg(_MODELS_PKG)
 _ensure_pkg(_UTILS_PKG)
 
 _ssrf_mod = _load_module("utils/ssrf.py", f"{_UTILS_PKG}.ssrf", _UTILS_PKG)
+_load_module("utils/agent_reason.py", f"{_UTILS_PKG}.agent_reason", _UTILS_PKG)
 sys.modules[_UTILS_PKG].ssrf = _ssrf_mod  # type: ignore
 sys.modules.setdefault(f"{_ROOT_PKG}.utils.ssrf", _ssrf_mod)
 
@@ -135,15 +136,24 @@ SaleOrderEnforcement = _enforcement_mod.SaleOrderEnforcement
 # Minimal ORM stub to instantiate SaleOrderEnforcement
 # ---------------------------------------------------------------------------
 
+# Task 21 (plan 04): forma REAL — el snapshot firmado no trae credenciales;
+# el id de instalación y el secreto HMAC salen de los ajustes del addon
+# (``EnforcementSnapshotService.get_credentials``). Antes este fixture los
+# metía en el snapshot y tapaba que en producción la capa 2 nunca se llamaba.
 _BASE_SNAPSHOT = {
     "merchantId":    "merch-odoo-test",
+}
+
+_CREDENTIALS = {
     "installationId": "install-odoo-001",
-    "hmacSecret":    "super-secret-hmac-key-32bytesxx",
+    "hmacSecret":    "example-hmac-secret-not-real-0000",
 }
 
 
-def _make_order(*, amount_total: float = 100.0, item_count: int = 2):
+def _make_order(*, amount_total: float = 100.0, item_count: int = 2, credentials=None):
     """Return a minimal SaleOrderEnforcement instance with stubbed ORM."""
+
+    creds = dict(_CREDENTIALS if credentials is None else credentials)
 
     class _FakeCurrency:
         name = "EUR"
@@ -158,6 +168,9 @@ def _make_order(*, amount_total: float = 100.0, item_count: int = 2):
         def get_param(self, key, default=""):
             return "https://api.trusteed.xyz"
 
+        def get_credentials(self, company_id=None):
+            return creds
+
     order = object.__new__(SaleOrderEnforcement)
     order.id           = 42
     order.amount_total = amount_total
@@ -165,6 +178,7 @@ def _make_order(*, amount_total: float = 100.0, item_count: int = 2):
     order.order_line   = [object()] * item_count
     order.env          = _FakeEnv()
     order.x_trusteed_agent_token = None
+    order.company_id = types.SimpleNamespace(id=1)  # Task 35b: la compañía del pedido
     return order
 
 
@@ -232,11 +246,39 @@ class TestCallLayer2:
         assert result["ruleCode"] == "trusteed:R010"
         assert result["reason"] == "Stripe risk score exceeded threshold"
 
-    # T088-5: missing merchantId/installationId/hmacSecret → None (skip)
+    # T088-5: missing installationId/hmacSecret in the SETTINGS → None (skip)
     def test_returns_none_when_credentials_missing(self):
-        order = _make_order()
-        result = self._call(order, snapshot={"merchantId": "", "installationId": "", "hmacSecret": ""})
+        order = _make_order(credentials={"installationId": "", "hmacSecret": ""})
+        with patch("requests.post", side_effect=AssertionError("no HTTP call expected")):
+            result = self._call(order)
         assert result is None, "Missing credentials must return None without HTTP call"
+
+    def test_credentials_in_the_snapshot_are_ignored(self):
+        """Un snapshot con ``installationId``/``hmacSecret`` (forma que el
+        servidor no emite) no suple unos ajustes vacíos."""
+        order = _make_order(credentials={"installationId": "", "hmacSecret": ""})
+        with patch("requests.post", side_effect=AssertionError("no HTTP call expected")):
+            result = self._call(
+                order,
+                snapshot={"installationId": "install-odoo-001", "hmacSecret": "example-not-real"},
+            )
+        assert result is None
+
+    def test_installation_header_comes_from_the_settings(self):
+        order = _make_order()
+        mock = MagicMock()
+        mock.status_code = 200
+        mock.json.return_value = {"decision": "ALLOW"}
+        captured: dict = {}
+
+        def _capture_post(url, **kwargs):
+            captured.update(kwargs)
+            return mock
+
+        with patch("requests.post", side_effect=_capture_post):
+            order._trusteed_cel_call_layer2("did:web:agent.test", 80.0, _BASE_SNAPSHOT, "ev-h")
+        assert captured["headers"]["X-Trusteed-Installation-Id"] == "install-odoo-001"
+        assert json.loads(captured["data"])["installationId"] == "install-odoo-001"
 
     # T088-6: SSRF guard — private IP base → None
     def test_returns_none_on_ssrf_blocked_api_base(self):
@@ -246,6 +288,7 @@ class TestCallLayer2:
             def __getitem__(self, key): return self
             def sudo(self): return self
             def get_param(self, key, default=""): return "https://192.168.1.1/evil"
+            def get_credentials(self, company_id=None): return dict(_CREDENTIALS)
 
         order.env = _FakeEnv()
         result = self._call(order)

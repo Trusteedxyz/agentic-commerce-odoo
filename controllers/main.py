@@ -12,7 +12,9 @@ Production improvements over spike F0:
   - ``requests`` library with (connect_timeout, read_timeout) tuple
   - no retry — single attempt (DoS prevention)
   - bootstrap secret never appears in any log statement
-  - group check ``trusteed.group_user`` before any processing
+  - group check ``trusteed.group_admin`` before any processing (SEC-184: the
+    panel token can approve held orders and change rules, so read-only
+    ``group_user`` does not get one)
   - multi-company scope includes ``company_ids`` (all allowed companies)
   - ``User-Agent`` header identifies production addon version
   - SSRF guard on api_base (via utils.ssrf.validate_api_base)
@@ -24,6 +26,7 @@ import hashlib
 import hmac
 import json
 import logging
+from urllib.parse import quote as url_quote
 
 import requests
 import requests.exceptions
@@ -158,8 +161,8 @@ class TrusteedController(http.Controller):
         if not user or user._is_public():
             return {"error": "unauthorized"}
 
-        # Group check — must hold group_user before any ICP reads
-        if not request.env.user.has_group("trusteed.group_user"):
+        # Group check — must hold group_admin before any ICP reads
+        if not request.env.user.has_group("trusteed.group_admin"):
             return {"error": "unauthorized"}
 
         ICP = request.env["ir.config_parameter"].sudo()
@@ -211,7 +214,7 @@ class TrusteedController(http.Controller):
             }
 
         access_token = decoded.get("token")
-        # merchant_id intentionally omitted — group_user gate allows all employees,
+        # merchant_id intentionally omitted — group_admin gate (SEC-184) limits it to administrators,
         # exposing it would leak a credential identifier.
         # api_base IS safe to return: it is the same value the SPA needs to
         # know where to send its own browser-side requests (mirrors the
@@ -225,3 +228,36 @@ class TrusteedController(http.Controller):
             "access_token": access_token,
             "api_base": api_base,
         }
+
+    @http.route(
+        "/.well-known/ucp",
+        type="http",
+        auth="public",
+        methods=["GET"],
+        csrf=False,
+    )
+    def ucp_wellknown(self, **_kwargs):
+        """Reenvía al perfil UCP central del comercio (Task 9, UCP-1 biversion).
+
+        Mirrors the WooCommerce/PrestaShop resolvers: this route NEVER builds
+        or duplicates the UCP profile body or its version — it only
+        302-redirects to the centrally generated per-store document. Fails
+        closed to 404 without `merchant_id`, so an agent is never redirected
+        to a store-less URL. `api_base` is admin-configurable, so it is
+        checked with the same `validate_api_base` SSRF/HTTPS guard used by
+        `exchange_bootstrap` before it is ever used as a redirect target.
+        """
+        ICP = request.env["ir.config_parameter"].sudo()
+        merchant_id = (ICP.get_param("trusteed.merchant_id") or "").strip()
+        if not merchant_id:
+            return request.not_found()
+
+        api_base = (
+            ICP.get_param("trusteed.api_base") or "https://api.trusteed.xyz"
+        ).strip().rstrip("/")
+        if not validate_api_base(api_base):
+            _logger.warning("trusteed ucp well-known blocked — invalid api_base (SSRF guard)")
+            return request.not_found()
+
+        destino = f"{api_base}/.well-known/ucp?store={url_quote(merchant_id, safe='')}"
+        return request.redirect(destino, code=302, local=False)
