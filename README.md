@@ -219,6 +219,12 @@ Investigating the report surfaced something it did not flag: an OAuth scope (`mc
 
 ## Changelog
 
+### 18.0.1.2.7 — Spanish panel wording
+
+- Added: the agent-readiness panel names the new "merchant decision" probe result ("Your choice" / "Decisión tuya") instead of showing it as an unrecognised state.
+- Fixed: the "Client types" labels in the Spanish panel read "Tipos de Client" (a mixed-language leftover); they now say "Tipos de cliente".
+- Fixed: the "ChatGPT / OpenAI" client type description in the Spanish panel read as if a word was missing; it now says "los GPT creados con ChatGPT y Codex".
+
 ### 18.0.1.2.6 — PayPal settles in your own PayPal account
 
 - Added: optional sync (Settings → Trusteed → "Sync PayPal account", off by default) that sends the PayPal REST client id and secret of Odoo's PayPal provider (`payment_paypal`, Odoo 18) to Trusteed once, after the transaction commits, and again whenever they or the provider state change. Provider `test` is sent as sandbox, `enabled` as production; `disabled`, or emptied credentials, disconnect PayPal in Trusteed. The secret is never logged or copied: only a sha256 fingerprint is kept. Single attempt, 2 s + 4 s timeout, only to Trusteed API hosts. Not verified on a real Odoo (`cr.postcommit` and the `payment_paypal` field names were not checked against Odoo 18 source).
