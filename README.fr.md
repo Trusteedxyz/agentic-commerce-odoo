@@ -87,6 +87,8 @@ Activer une bascule ne rend jamais appelable un outil dépourvu de backend dépl
 5. **Paramètres → Applications → Mettre à jour la liste des applications**, puis recherchez « Trusteed » et cliquez sur **Installer**.
 6. Ouvrez le nouveau menu **Trusteed**. L'assistant de configuration rapide s'ouvre automatiquement.
 
+**Mettre à jour une installation existante :** après avoir remplacé le dossier par la nouvelle version, redémarrez Odoo et mettez à jour le module (**Applications → Trusteed → Mettre à jour**, ou `-u trusteed`). Sans cette étape, Odoo continue d'afficher l'ancien panneau.
+
 ### Depuis les sources (compiler le zip vous-même)
 
 ```bash

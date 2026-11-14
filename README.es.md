@@ -87,6 +87,8 @@ Activar un interruptor nunca hace invocable una herramienta sin backend desplega
 5. **Ajustes → Aplicaciones → Actualizar lista de aplicaciones**, luego busca «Trusteed» y pulsa **Instalar**.
 6. Abre el nuevo menú **Trusteed**. El asistente de configuración rápida se abre automáticamente.
 
+**Actualizar una instalación existente:** tras sustituir la carpeta por la versión nueva, reinicia Odoo y actualiza el módulo (**Aplicaciones → Trusteed → Actualizar**, o `-u trusteed`). Sin este paso Odoo sigue mostrando el panel anterior.
+
 ### Desde el código fuente (compilar el zip tú mismo)
 
 ```bash

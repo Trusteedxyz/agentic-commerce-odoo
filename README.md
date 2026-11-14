@@ -87,6 +87,8 @@ Turning a toggle on never makes a tool with no deployed backend invocable. The t
 5. **Settings → Apps → Update Apps List**, then search for "Trusteed" and click **Install**.
 6. Open the new **Trusteed** menu. The Quick Setup wizard opens automatically.
 
+**Updating an existing install:** after replacing the folder with the new version, restart Odoo and update the module (**Apps → Trusteed → Upgrade**, or `-u trusteed`). Without this step Odoo keeps showing the previous panel.
+
 ### From source (build the zip yourself)
 
 ```bash

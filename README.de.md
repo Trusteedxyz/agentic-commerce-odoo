@@ -87,6 +87,8 @@ Wenn Sie einen Schalter einschalten, wird ein Tool ohne bereitgestelltes Backend
 5. **Einstellungen → Apps → App-Liste aktualisieren**, dann nach „Trusteed“ suchen und auf **Installieren** klicken.
 6. Öffnen Sie das neue Menü **Trusteed**. Der Schnelleinrichtungs-Assistent öffnet sich automatisch.
 
+**Bestehende Installation aktualisieren:** Ersetzen Sie den Ordner durch die neue Version, starten Sie Odoo neu und aktualisieren Sie das Modul (**Apps → Trusteed → Aktualisieren**, oder `-u trusteed`). Ohne diesen Schritt zeigt Odoo weiter das vorherige Panel an.
+
 ### Aus dem Quellcode (Zip selbst erstellen)
 
 ```bash
