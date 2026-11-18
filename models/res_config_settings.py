@@ -48,6 +48,16 @@ class ResConfigSettings(models.TransientModel):
         ),
     )
 
+    trusteed_returns_page_url = fields.Char(
+        string="Returns and withdrawal page (address)",
+        config_parameter="trusteed.returns_page_url",
+        help=(
+            "Address of the page of your store that explains returns and the right "
+            "of withdrawal. The addon tells Trusteed its address. If you leave it "
+            "empty, nothing is sent."
+        ),
+    )
+
     # ── FR-018b: per-tool opt-in toggles ──────────────────────────────────────
     # Defaults: sign + verify ON; the three payment rails OFF (opt-in). The two
     # `planned`-backend tools (sign_trust_receipt, dispatch_payment_ap2) keep a
@@ -106,6 +116,7 @@ class ResConfigSettings(models.TransientModel):
             company_count,
         )
         super().set_values()
+        self.env["trusteed.policy.pages.sync"].schedule_current_company()
         # H2: el opt-in es de la compañía actual (parámetro explícito "1"/"0").
         now_enabled = bool(self.trusteed_paypal_sync_enabled)
         icp.set_param(pp.enabled_param(company.id), ps.flag_param(now_enabled))

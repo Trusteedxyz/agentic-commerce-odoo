@@ -50,3 +50,11 @@ msgstr "URL Base de la API"
 #. module: trusteed
 msgid "Trusteed Settings"
 msgstr "Configuración de Trusteed"
+
+#. module: trusteed
+msgid "Returns and withdrawal page (address)"
+msgstr "Página de devoluciones y desistimiento (dirección)"
+
+#. module: trusteed
+msgid "Address of the page of your store that explains returns and the right of withdrawal. The addon tells Trusteed its address. If you leave it empty, nothing is sent."
+msgstr "Dirección de la página de tu tienda que explica las devoluciones y el derecho de desistimiento. El addon comunica su dirección a Trusteed. Si la dejas vacía, no se envía nada."

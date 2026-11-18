@@ -18,3 +18,5 @@ from . import stock_picking_fulfillment
 from . import account_move_refund_proxy
 # F4.2 — sync de payment_paypal (Odoo 18) con la plataforma (PayPal en la cuenta del comercio)
 from . import payment_provider_paypal_sync  # noqa: F401
+# Páginas de política del comercio (devoluciones) -> Trusteed
+from . import policy_pages_sync  # noqa: F401

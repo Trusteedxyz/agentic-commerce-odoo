@@ -35,4 +35,15 @@ env['trusteed.enforcement.snapshot'].sudo().get_snapshot()
         -->
         <field name="priority">20</field>
     </record>
+    <!-- Páginas de política del comercio: reenvío diario (log si falla, nunca fatal). -->
+    <record id="ir_cron_policy_pages_sync" model="ir.cron">
+        <field name="name">Trusteed: Send policy pages</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">env['trusteed.policy.pages.sync'].sudo().cron_sync()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+        <field name="priority">20</field>
+    </record>
 </odoo>

@@ -31,6 +31,9 @@
               <setting id="trusteed_paypal_sync_setting" string="Sync PayPal account" help="Send the PayPal REST credentials of Odoo's PayPal provider to Trusteed, so agent payments settle in your own PayPal account. Off by default.">
                 <field name="trusteed_paypal_sync_enabled"/>
               </setting>
+              <setting id="trusteed_returns_page_setting" string="Returns and withdrawal page (address)" help="Address of the page of your store that explains returns and the right of withdrawal. The addon tells Trusteed its address. If you leave it empty, nothing is sent.">
+                <field name="trusteed_returns_page_url" placeholder="/returns"/>
+              </setting>
             </block>
             <block title="Agentic Tools" name="trusteed_agentic_tools_setting_container">
               <div class="text-muted mb16">
