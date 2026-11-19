@@ -49,9 +49,9 @@ All five tools are registered on install, but only one of them is both enabled b
 |------|---------|--------------|
 | `verify-agent-signature` | on | **Operational**: RFC 9421 signature verification |
 | `dispatch-payment-acp` | **off** | Works, but opt-in: agent-initiated payment, you enable it yourself |
-| `dispatch-payment-x402` | **off** | Works, but opt-in: agent-initiated payment, you enable it yourself |
+| `dispatch-payment-x402` | **off** | Sandbox only (test value, no real settlement); opt-in, you enable it yourself |
 | `sign-trust-receipt` | on | **No backend deployed yet**: always reports unavailable, whatever the toggle says. Receipts are still issued by the checkout pipeline and readable under **My Sales → AI Sales** |
-| `dispatch-payment-ap2` | **off** | **No backend deployed yet**: always reports unavailable, whatever the toggle says |
+| `dispatch-payment-ap2` | **off** | **Planned; no backend deployed yet**: always reports unavailable, whatever the toggle says |
 
 Turning a toggle on never makes a tool with no deployed backend invocable. The toggle only preserves your preference for when that backend ships.
 
